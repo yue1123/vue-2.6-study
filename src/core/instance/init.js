@@ -37,12 +37,14 @@ export function initMixin (Vue: Class<Component>) {
     // a flag to avoid this being observed
     vm._isVue = true
     // merge options
+    // 组件模式的options 合并逻辑
     if (options && options._isComponent) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
       // internal component options needs special treatment.
       initInternalComponent(vm, options)
     } else {
+      // 单例模式options合并逻辑
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
@@ -50,6 +52,7 @@ export function initMixin (Vue: Class<Component>) {
       )
     }
     /* istanbul ignore else */
+    // 初始化
     if (process.env.NODE_ENV !== 'production') {
       initProxy(vm)
     } else {
@@ -80,6 +83,9 @@ export function initMixin (Vue: Class<Component>) {
 }
 
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
+  // 把组件的一些属性动态属性,保存在vm.$options中,访问速度可以更快
+  // 代码小技巧: 用opts保存vm.$options的引用,通过opts来修改,避免直接用vm.$options 来修改可以简化代码,看着更简洁
+  
   const opts = vm.$options = Object.create(vm.constructor.options)
   // doing this because it's faster than dynamic enumeration.
   const parentVnode = options._parentVnode
