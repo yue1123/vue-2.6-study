@@ -1,6 +1,6 @@
 /*!
  * Vue.js v2.6.14
- * (c) 2014-2021 Evan You
+ * (c) 2014-2022 Evan You
  * Released under the MIT License.
  */
 (function (global, factory) {
@@ -46,7 +46,7 @@
 
   /**
    * Quick object check - this is primarily used to tell
-   * Objects from primitive values when we know the value
+   * objects from primitive values when we know the value
    * is a JSON-compliant type.
    */
   function isObject (obj) {
@@ -2077,9 +2077,12 @@
       typeof Proxy !== 'undefined' && isNative(Proxy);
 
     if (hasProxy) {
+      // 内建事件修饰符
       var isBuiltInModifier = makeMap('stop,prevent,self,ctrl,shift,alt,meta,exact');
+      // 自定义配置键盘修饰符
       config.keyCodes = new Proxy(config.keyCodes, {
         set: function set (target, key, value) {
+          // 如果是已经存在的内建修饰符,则不允许重写
           if (isBuiltInModifier(key)) {
             warn(("Avoid overwriting built-in modifier in config.keyCodes: ." + key));
             return false
@@ -4971,12 +4974,19 @@
 
   var uid$3 = 0;
 
+  /**
+   * 初始化
+   * @param {*} Vue vue 构造函数
+   */
   function initMixin (Vue) {
     Vue.prototype._init = function (options) {
+      // 保存当前vm 实例
       var vm = this;
       // a uid
+      // 每个实例都有一个自增的uid
       vm._uid = uid$3++;
 
+      // ======= 用于性能分析 ========
       var startTag, endTag;
       /* istanbul ignore if */
       if (config.performance && mark) {
@@ -4984,16 +4994,20 @@
         endTag = "vue-perf-end:" + (vm._uid);
         mark(startTag);
       }
+      // ===========================
 
+      // 一个标志避免 this本身被 observed
       // a flag to avoid this being observed
       vm._isVue = true;
       // merge options
+      // 组件模式的options 合并逻辑
       if (options && options._isComponent) {
         // optimize internal component instantiation
         // since dynamic options merging is pretty slow, and none of the
         // internal component options needs special treatment.
         initInternalComponent(vm, options);
       } else {
+        // 单例模式options合并逻辑
         vm.$options = mergeOptions(
           resolveConstructorOptions(vm.constructor),
           options || {},
@@ -5001,9 +5015,11 @@
         );
       }
       /* istanbul ignore else */
+      // 初始化proxy, 主要作用是代理模版语法中不认识的语法, 例如{{ Number(age) }}, 还有就是校验 以_和$开头的变量,是不是在 data中,是的话就报错
       {
         initProxy(vm);
       }
+      // 暴露真真的 vm 实例在vm._self上
       // expose real self
       vm._self = vm;
       initLifecycle(vm);
@@ -5029,6 +5045,9 @@
   }
 
   function initInternalComponent (vm, options) {
+    // 把组件的一些属性动态属性,保存在vm.$options中,访问速度可以更快
+    // 代码小技巧: 用opts保存vm.$options的引用,通过opts来修改,避免直接用vm.$options 来修改可以简化代码,看着更简洁
+    
     var opts = vm.$options = Object.create(vm.constructor.options);
     // doing this because it's faster than dynamic enumeration.
     var parentVnode = options._parentVnode;
@@ -5092,6 +5111,7 @@
     this._init(options);
   }
 
+  // 向Vue 原型注入_init初始化方法
   initMixin(Vue);
   stateMixin(Vue);
   eventsMixin(Vue);
@@ -7620,7 +7640,9 @@
     }
     var on = vnode.data.on || {};
     var oldOn = oldVnode.data.on || {};
-    target$1 = vnode.elm;
+    // vnode is empty when removing all listeners,
+    // and use old vnode dom element
+    target$1 = vnode.elm || oldVnode.elm;
     normalizeEvents(on);
     updateListeners(on, oldOn, add$1, remove$2, createOnceHandler$1, vnode.context);
     target$1 = undefined;
@@ -7628,7 +7650,8 @@
 
   var events = {
     create: updateDOMListeners,
-    update: updateDOMListeners
+    update: updateDOMListeners,
+    destroy: function (vnode) { return updateDOMListeners(vnode, emptyNode); }
   };
 
   /*  */
@@ -9180,7 +9203,7 @@
       }
     }
     if (staticClass) {
-      el.staticClass = JSON.stringify(staticClass);
+      el.staticClass = JSON.stringify(staticClass.replace(/\s+/g, ' ').trim());
     }
     var classBinding = getBindingAttr(el, 'class', false /* getStatic */);
     if (classBinding) {

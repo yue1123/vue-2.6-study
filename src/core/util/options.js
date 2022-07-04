@@ -295,16 +295,32 @@ export function validateComponentName (name: string) {
  * Ensure all props option syntax are normalized into the
  * Object-based format.
  */
+// 规范化处理 props, 因为 props 两种方式, 把它们处理成统一的一种
 function normalizeProps (options: Object, vm: ?Component) {
+  // 去除 props
   const props = options.props
+  // 如果没有使用 props,直接返回
   if (!props) return
   const res = {}
   let i, val, name
+  // 如果是字符串加数组的方式 [ 'age', 'name' ]
+  /**
+   * {
+   *   age:{
+   *     type: null
+   *   },
+   *   name:{
+   *     type: null
+   *   }
+   * }
+   */
   if (Array.isArray(props)) {
     i = props.length
     while (i--) {
       val = props[i]
+      // 如果 val 是 string
       if (typeof val === 'string') {
+        // 驼峰命名
         name = camelize(val)
         res[name] = { type: null }
       } else if (process.env.NODE_ENV !== 'production') {
@@ -312,26 +328,40 @@ function normalizeProps (options: Object, vm: ?Component) {
       }
     }
   } else if (isPlainObject(props)) {
+    // 如果 props 是对象形式
+    /**
+     * {
+     *   age: {
+     *     type: Number,
+     *     default: 18
+     *   }
+     * }
+     */
+    // 依次遍历出做处理
     for (const key in props) {
       val = props[key]
       name = camelize(key)
+      // 如果值是对象,则直接用
       res[name] = isPlainObject(val)
         ? val
         : { type: val }
     }
   } else if (process.env.NODE_ENV !== 'production') {
+    // 如果是传入的其他类型的 props,并且不是生产环境,就给出警告
     warn(
       `Invalid value for option "props": expected an Array or an Object, ` +
       `but got ${toRawType(props)}.`,
       vm
     )
   }
+  // 将处理后的 props, 覆盖掉原本的 props
   options.props = res
 }
 
 /**
  * Normalize all injections into Object-based format
  */
+// 规范化处理 Inject
 function normalizeInject (options: Object, vm: ?Component) {
   const inject = options.inject
   if (!inject) return
@@ -359,6 +389,7 @@ function normalizeInject (options: Object, vm: ?Component) {
 /**
  * Normalize raw function directives into object format.
  */
+// 规范化处理指令
 function normalizeDirectives (options: Object) {
   const dirs = options.directives
   if (dirs) {

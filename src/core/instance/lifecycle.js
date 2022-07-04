@@ -29,6 +29,8 @@ export function setActiveInstance(vm: Component) {
   }
 }
 
+
+// 初始化生命周期
 export function initLifecycle (vm: Component) {
   const options = vm.$options
 
@@ -56,6 +58,7 @@ export function initLifecycle (vm: Component) {
 }
 
 export function lifecycleMixin (Vue: Class<Component>) {
+  // update 方法
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
     const vm: Component = this
     const prevEl = vm.$el
@@ -87,6 +90,8 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // updated in a parent's updated hook.
   }
 
+
+  // 强制更新方法,直接调用当前实例的模版 watcher.update()
   Vue.prototype.$forceUpdate = function () {
     const vm: Component = this
     if (vm._watcher) {
@@ -94,58 +99,69 @@ export function lifecycleMixin (Vue: Class<Component>) {
     }
   }
 
+  // 销毁组件方法
   Vue.prototype.$destroy = function () {
-    const vm: Component = this
+    const vm: Component = this;
+    // 如果已经是正在被销毁的组件了,直接返回
     if (vm._isBeingDestroyed) {
-      return
+      return;
     }
-    callHook(vm, 'beforeDestroy')
-    vm._isBeingDestroyed = true
+    // 调用beforeDestroy生命周期
+    callHook(vm, "beforeDestroy");
+    vm._isBeingDestroyed = true;
     // remove self from parent
-    const parent = vm.$parent
+    const parent = vm.$parent;
     if (parent && !parent._isBeingDestroyed && !vm.$options.abstract) {
-      remove(parent.$children, vm)
+      remove(parent.$children, vm);
     }
     // teardown watchers
+    // 如果当前实例有模版 watcher ,就销毁
     if (vm._watcher) {
-      vm._watcher.teardown()
+      vm._watcher.teardown();
     }
-    let i = vm._watchers.length
+    // 依次销毁实例的 watch watcher 和 computed watcher
+    let i = vm._watchers.length;
     while (i--) {
-      vm._watchers[i].teardown()
+      vm._watchers[i].teardown();
     }
     // remove reference from data ob
     // frozen object may not have observer.
     if (vm._data.__ob__) {
-      vm._data.__ob__.vmCount--
+      vm._data.__ob__.vmCount--;
     }
     // call the last hook...
-    vm._isDestroyed = true
+    vm._isDestroyed = true;
     // invoke destroy hooks on current rendered tree
-    vm.__patch__(vm._vnode, null)
+    vm.__patch__(vm._vnode, null);
     // fire destroyed hook
-    callHook(vm, 'destroyed')
+    callHook(vm, "destroyed");
     // turn off all instance listeners.
-    vm.$off()
+    vm.$off();
     // remove __vue__ reference
     if (vm.$el) {
-      vm.$el.__vue__ = null
+      vm.$el.__vue__ = null;
     }
     // release circular reference (#6759)
     if (vm.$vnode) {
-      vm.$vnode.parent = null
+      vm.$vnode.parent = null;
     }
   }
 }
 
+// 挂载组件方法
+// hydrating 这个 boolean值应该是用于服务端渲染,给的静态脱水模版,这时候挂载,需要重新注入,恢复组件的数据动态化
 export function mountComponent (
   vm: Component,
   el: ?Element,
   hydrating?: boolean
 ): Component {
+  // 保存当前组件挂载元素到$el上
   vm.$el = el
+  // 判断有没有 render方法
   if (!vm.$options.render) {
+    // 没有 render方法, 就用创建空 VNode(空字符串的注释节点) 的方法当做 render
     vm.$options.render = createEmptyVNode
+    // 如果不是生产环境,就给出警告
     if (process.env.NODE_ENV !== 'production') {
       /* istanbul ignore if */
       if ((vm.$options.template && vm.$options.template.charAt(0) !== '#') ||
@@ -164,10 +180,12 @@ export function mountComponent (
       }
     }
   }
+  // 调用生命收齐 beforeMount
   callHook(vm, 'beforeMount')
 
   let updateComponent
   /* istanbul ignore if */
+  // 如果不是生产环境,并且配置的性能分析,就执行带有性能分析的update函数
   if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
     updateComponent = () => {
       const name = vm._name
@@ -186,11 +204,12 @@ export function mountComponent (
       measure(`vue ${name} patch`, startTag, endTag)
     }
   } else {
+    // 生产环境就执行纯净的 update函数
     updateComponent = () => {
       vm._update(vm._render(), hydrating)
     }
   }
-
+  // TODO1: end here
   // we set this to vm._watcher inside the watcher's constructor
   // since the watcher's initial patch may call $forceUpdate (e.g. inside child
   // component's mounted hook), which relies on vm._watcher being already defined
