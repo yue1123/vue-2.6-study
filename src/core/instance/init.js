@@ -12,12 +12,19 @@ import { extend, mergeOptions, formatComponentName } from '../util/index'
 
 let uid = 0
 
+/**
+ * 初始化
+ * @param {*} Vue vue 构造函数
+ */
 export function initMixin (Vue: Class<Component>) {
   Vue.prototype._init = function (options?: Object) {
+    // 保存当前vm 实例
     const vm: Component = this
     // a uid
+    // 每个实例都有一个自增的uid
     vm._uid = uid++
 
+    // ======= 用于性能分析 ========
     let startTag, endTag
     /* istanbul ignore if */
     if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
@@ -25,6 +32,7 @@ export function initMixin (Vue: Class<Component>) {
       endTag = `vue-perf-end:${vm._uid}`
       mark(startTag)
     }
+    // ===========================
 
     // a flag to avoid this being observed
     vm._isVue = true
