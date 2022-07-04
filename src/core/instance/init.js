@@ -34,6 +34,7 @@ export function initMixin (Vue: Class<Component>) {
     }
     // ===========================
 
+    // 一个标志避免 this本身被 observed
     // a flag to avoid this being observed
     vm._isVue = true
     // merge options
@@ -52,12 +53,13 @@ export function initMixin (Vue: Class<Component>) {
       )
     }
     /* istanbul ignore else */
-    // 初始化
+    // 初始化proxy, 主要作用是代理模版语法中不认识的语法, 例如{{ Number(age) }}, 还有就是校验 以_和$开头的变量,是不是在 data中,是的话就报错
     if (process.env.NODE_ENV !== 'production') {
       initProxy(vm)
     } else {
       vm._renderProxy = vm
     }
+    // 暴露真真的 vm 实例在vm._self上
     // expose real self
     vm._self = vm
     initLifecycle(vm)

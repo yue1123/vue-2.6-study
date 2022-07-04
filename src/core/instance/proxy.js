@@ -38,9 +38,12 @@ if (process.env.NODE_ENV !== 'production') {
     typeof Proxy !== 'undefined' && isNative(Proxy)
 
   if (hasProxy) {
+    // 内建事件修饰符
     const isBuiltInModifier = makeMap('stop,prevent,self,ctrl,shift,alt,meta,exact')
+    // 自定义配置键盘修饰符
     config.keyCodes = new Proxy(config.keyCodes, {
       set (target, key, value) {
+        // 如果是已经存在的内建修饰符,则不允许重写
         if (isBuiltInModifier(key)) {
           warn(`Avoid overwriting built-in modifier in config.keyCodes: .${key}`)
           return false
