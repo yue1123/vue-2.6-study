@@ -77,6 +77,7 @@ export function updateListeners (
       if (isUndef(cur.fns)) {
         cur = on[name] = createFnInvoker(cur, vm)
       }
+      // 是否带有.once 修饰符
       if (isTrue(event.once)) {
         cur = on[name] = createOnceHandler(event.name, cur, event.capture)
       }
@@ -86,6 +87,7 @@ export function updateListeners (
       on[name] = old
     }
   }
+  // 遍历一遍老的时间监听,如果没有出现在新的中,就移除
   for (name in oldOn) {
     if (isUndef(on[name])) {
       event = normalizeEvent(name)

@@ -136,12 +136,15 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // fire destroyed hook
     callHook(vm, "destroyed");
     // turn off all instance listeners.
+    // 关闭所有组件的订阅监听
     vm.$off();
     // remove __vue__ reference
+    // 移除引用, 触发垃圾回收
     if (vm.$el) {
       vm.$el.__vue__ = null;
     }
     // release circular reference (#6759)
+    // 释放循环引用
     if (vm.$vnode) {
       vm.$vnode.parent = null;
     }
@@ -149,7 +152,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
 }
 
 // 挂载组件方法
-// hydrating 这个 boolean值应该是用于服务端渲染,给的静态脱水模版,这时候挂载,需要重新注入,恢复组件的数据动态化
+// hydrating 这个 boolean值应该是用于服务端渲染,给的静态脱水模版,这时候挂载,需要重新注水,恢复组件的数据动态化
 export function mountComponent (
   vm: Component,
   el: ?Element,

@@ -9,6 +9,7 @@ import {
 } from '../util/index'
 import { updateListeners } from '../vdom/helpers/index'
 
+// 把父子组件的事件监听, 转换为发布订阅模式
 export function initEvents (vm: Component) {
   vm._events = Object.create(null)
   vm._hasHookEvent = false
@@ -51,6 +52,9 @@ export function updateComponentListeners (
 
 export function eventsMixin (Vue: Class<Component>) {
   const hookRE = /^hook:/
+  // 实现一个发布订阅模式
+
+  // 添加订阅方法,支持一次订阅一个事件string 和多个事件 string[]
   Vue.prototype.$on = function (event: string | Array<string>, fn: Function): Component {
     const vm: Component = this
     if (Array.isArray(event)) {
@@ -68,6 +72,7 @@ export function eventsMixin (Vue: Class<Component>) {
     return vm
   }
 
+  // 只订阅一次
   Vue.prototype.$once = function (event: string, fn: Function): Component {
     const vm: Component = this
     function on () {
@@ -79,6 +84,7 @@ export function eventsMixin (Vue: Class<Component>) {
     return vm
   }
 
+  // 取消订阅
   Vue.prototype.$off = function (event?: string | Array<string>, fn?: Function): Component {
     const vm: Component = this
     // all
@@ -115,6 +121,8 @@ export function eventsMixin (Vue: Class<Component>) {
     return vm
   }
 
+
+  // 发布订阅
   Vue.prototype.$emit = function (event: string): Component {
     const vm: Component = this
     if (process.env.NODE_ENV !== 'production') {
