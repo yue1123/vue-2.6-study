@@ -359,10 +359,13 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
 export function callHook (vm: Component, hook: string) {
   // #7573 disable dep collection when invoking lifecycle hooks
   pushTarget()
+  // 取出组件 options 中,指定的 hook function
+  // debugger
   const handlers = vm.$options[hook]
   const info = `${hook} hook`
   if (handlers) {
     for (let i = 0, j = handlers.length; i < j; i++) {
+      // invokeWithErrorHandling 这个函数作用是,捕获调用期间的错误处理
       invokeWithErrorHandling(handlers[i], vm, null, vm, info)
     }
   }

@@ -746,6 +746,8 @@
     }
   };
 
+  // 这是一个动态的值, 全局只有一个,因为 js是单线程, 同一时间只能初始化一个组件 Watcher
+  // FIXME: 模版里面有子组件的情况怎样处理??
   // The current target watcher being evaluated.
   // This is globally unique because only one watcher
   // can be evaluated at a time.
@@ -1428,16 +1430,32 @@
    * Ensure all props option syntax are normalized into the
    * Object-based format.
    */
+  // 规范化处理 props, 因为 props 两种方式, 把它们处理成统一的一种
   function normalizeProps (options, vm) {
+    // 去除 props
     var props = options.props;
+    // 如果没有使用 props,直接返回
     if (!props) { return }
     var res = {};
     var i, val, name;
+    // 如果是字符串加数组的方式 [ 'age', 'name' ]
+    /**
+     * {
+     *   age:{
+     *     type: null
+     *   },
+     *   name:{
+     *     type: null
+     *   }
+     * }
+     */
     if (Array.isArray(props)) {
       i = props.length;
       while (i--) {
         val = props[i];
+        // 如果 val 是 string
         if (typeof val === 'string') {
+          // 驼峰命名
           name = camelize(val);
           res[name] = { type: null };
         } else {
@@ -1445,26 +1463,40 @@
         }
       }
     } else if (isPlainObject(props)) {
+      // 如果 props 是对象形式
+      /**
+       * {
+       *   age: {
+       *     type: Number,
+       *     default: 18
+       *   }
+       * }
+       */
+      // 依次遍历出做处理
       for (var key in props) {
         val = props[key];
         name = camelize(key);
+        // 如果值是对象,则直接用
         res[name] = isPlainObject(val)
           ? val
           : { type: val };
       }
     } else {
+      // 如果是传入的其他类型的 props,并且不是生产环境,就给出警告
       warn(
         "Invalid value for option \"props\": expected an Array or an Object, " +
         "but got " + (toRawType(props)) + ".",
         vm
       );
     }
+    // 将处理后的 props, 覆盖掉原本的 props
     options.props = res;
   }
 
   /**
    * Normalize all injections into Object-based format
    */
+  // 规范化处理 Inject
   function normalizeInject (options, vm) {
     var inject = options.inject;
     if (!inject) { return }
@@ -1492,6 +1524,7 @@
   /**
    * Normalize raw function directives into object format.
    */
+  // 规范化处理指令
   function normalizeDirectives (options) {
     var dirs = options.directives;
     if (dirs) {
@@ -2226,6 +2259,7 @@
         if (isUndef(cur.fns)) {
           cur = on[name] = createFnInvoker(cur, vm);
         }
+        // 是否带有.once 修饰符
         if (isTrue(event.once)) {
           cur = on[name] = createOnceHandler(event.name, cur, event.capture);
         }
@@ -2235,6 +2269,7 @@
         on[name] = old;
       }
     }
+    // 遍历一遍老的时间监听,如果没有出现在新的中,就移除
     for (name in oldOn) {
       if (isUndef(on[name])) {
         event = normalizeEvent(name);
@@ -3518,9 +3553,11 @@
     // so that we get proper render context inside it.
     // args order: tag, data, children, normalizationType, alwaysNormalize
     // internal version is used by render functions compiled from templates
+    // 内部版本使用的渲染函数
     vm._c = function (a, b, c, d) { return createElement(vm, a, b, c, d, false); };
     // normalization is always applied for the public version, used in
     // user-written render functions.
+    // 自定义 runder 函数使用的渲染函数
     vm.$createElement = function (a, b, c, d) { return createElement(vm, a, b, c, d, true); };
 
     // $attrs & $listeners are exposed for easier HOC creation.
@@ -3529,12 +3566,26 @@
 
     /* istanbul ignore else */
     {
-      defineReactive$$1(vm, '$attrs', parentData && parentData.attrs || emptyObject, function () {
-        !isUpdatingChildComponent && warn("$attrs is readonly.", vm);
-      }, true);
-      defineReactive$$1(vm, '$listeners', options._parentListeners || emptyObject, function () {
-        !isUpdatingChildComponent && warn("$listeners is readonly.", vm);
-      }, true);
+      // 定义$attrs 并且不允许修改,开发环境给出警告
+      defineReactive$$1(
+        vm,
+        "$attrs",
+        (parentData && parentData.attrs) || emptyObject,
+        function () {
+          !isUpdatingChildComponent && warn("$attrs is readonly.", vm);
+        },
+        true
+      );
+      // 定义$listeners 并且不允许修改,开发环境给出警告
+      defineReactive$$1(
+        vm,
+        "$listeners",
+        options._parentListeners || emptyObject,
+        function () {
+          !isUpdatingChildComponent && warn("$listeners is readonly.", vm);
+        },
+        true
+      );
     }
   }
 
@@ -3543,7 +3594,7 @@
   function renderMixin (Vue) {
     // install runtime convenience helpers
     installRenderHelpers(Vue.prototype);
-
+    // 挂载$nextTick方法
     Vue.prototype.$nextTick = function (fn) {
       return nextTick(fn, this)
     };
@@ -3778,6 +3829,7 @@
 
   /*  */
 
+  // 把父子组件的事件监听, 转换为发布订阅模式
   function initEvents (vm) {
     vm._events = Object.create(null);
     vm._hasHookEvent = false;
@@ -3820,6 +3872,9 @@
 
   function eventsMixin (Vue) {
     var hookRE = /^hook:/;
+    // 实现一个发布订阅模式
+
+    // 添加订阅方法,支持一次订阅一个事件string 和多个事件 string[]
     Vue.prototype.$on = function (event, fn) {
       var vm = this;
       if (Array.isArray(event)) {
@@ -3837,6 +3892,7 @@
       return vm
     };
 
+    // 只订阅一次
     Vue.prototype.$once = function (event, fn) {
       var vm = this;
       function on () {
@@ -3848,6 +3904,7 @@
       return vm
     };
 
+    // 取消订阅
     Vue.prototype.$off = function (event, fn) {
       var vm = this;
       // all
@@ -3884,6 +3941,8 @@
       return vm
     };
 
+
+    // 发布订阅
     Vue.prototype.$emit = function (event) {
       var vm = this;
       {
@@ -3924,6 +3983,8 @@
     }
   }
 
+
+  // 初始化生命周期
   function initLifecycle (vm) {
     var options = vm.$options;
 
@@ -3951,6 +4012,7 @@
   }
 
   function lifecycleMixin (Vue) {
+    // update 方法
     Vue.prototype._update = function (vnode, hydrating) {
       var vm = this;
       var prevEl = vm.$el;
@@ -3982,6 +4044,8 @@
       // updated in a parent's updated hook.
     };
 
+
+    // 强制更新方法,直接调用当前实例的模版 watcher.update()
     Vue.prototype.$forceUpdate = function () {
       var vm = this;
       if (vm._watcher) {
@@ -3989,12 +4053,15 @@
       }
     };
 
+    // 销毁组件方法
     Vue.prototype.$destroy = function () {
       var vm = this;
+      // 如果已经是正在被销毁的组件了,直接返回
       if (vm._isBeingDestroyed) {
-        return
+        return;
       }
-      callHook(vm, 'beforeDestroy');
+      // 调用beforeDestroy生命周期
+      callHook(vm, "beforeDestroy");
       vm._isBeingDestroyed = true;
       // remove self from parent
       var parent = vm.$parent;
@@ -4002,9 +4069,11 @@
         remove(parent.$children, vm);
       }
       // teardown watchers
+      // 如果当前实例有模版 watcher ,就销毁
       if (vm._watcher) {
         vm._watcher.teardown();
       }
+      // 依次销毁实例的 watch watcher 和 computed watcher
       var i = vm._watchers.length;
       while (i--) {
         vm._watchers[i].teardown();
@@ -4019,28 +4088,37 @@
       // invoke destroy hooks on current rendered tree
       vm.__patch__(vm._vnode, null);
       // fire destroyed hook
-      callHook(vm, 'destroyed');
+      callHook(vm, "destroyed");
       // turn off all instance listeners.
+      // 关闭所有组件的订阅监听
       vm.$off();
       // remove __vue__ reference
+      // 移除引用, 触发垃圾回收
       if (vm.$el) {
         vm.$el.__vue__ = null;
       }
       // release circular reference (#6759)
+      // 释放循环引用
       if (vm.$vnode) {
         vm.$vnode.parent = null;
       }
     };
   }
 
+  // 挂载组件方法
+  // hydrating 这个 boolean值应该是用于服务端渲染,给的静态脱水模版,这时候挂载,需要重新注水,恢复组件的数据动态化
   function mountComponent (
     vm,
     el,
     hydrating
   ) {
+    // 保存当前组件挂载元素到$el上
     vm.$el = el;
+    // 判断有没有 render方法
     if (!vm.$options.render) {
+      // 没有 render方法, 就用创建空 VNode(空字符串的注释节点) 的方法当做 render
       vm.$options.render = createEmptyVNode;
+      // 如果不是生产环境,就给出警告
       {
         /* istanbul ignore if */
         if ((vm.$options.template && vm.$options.template.charAt(0) !== '#') ||
@@ -4059,10 +4137,12 @@
         }
       }
     }
+    // 调用生命收齐 beforeMount
     callHook(vm, 'beforeMount');
 
     var updateComponent;
     /* istanbul ignore if */
+    // 如果不是生产环境,并且配置的性能分析,就执行带有性能分析的update函数
     if (config.performance && mark) {
       updateComponent = function () {
         var name = vm._name;
@@ -4081,11 +4161,12 @@
         measure(("vue " + name + " patch"), startTag, endTag);
       };
     } else {
+      // 生产环境就执行纯净的 update函数
       updateComponent = function () {
         vm._update(vm._render(), hydrating);
       };
     }
-
+    // TODO1: end here
     // we set this to vm._watcher inside the watcher's constructor
     // since the watcher's initial patch may call $forceUpdate (e.g. inside child
     // component's mounted hook), which relies on vm._watcher being already defined
@@ -4232,10 +4313,13 @@
   function callHook (vm, hook) {
     // #7573 disable dep collection when invoking lifecycle hooks
     pushTarget();
+    // 取出组件 options 中,指定的 hook function
+    // debugger
     var handlers = vm.$options[hook];
     var info = hook + " hook";
     if (handlers) {
       for (var i = 0, j = handlers.length; i < j; i++) {
+        // invokeWithErrorHandling 这个函数作用是,捕获调用期间的错误处理
         invokeWithErrorHandling(handlers[i], vm, null, vm, info);
       }
     }
@@ -5022,8 +5106,11 @@
       // 暴露真真的 vm 实例在vm._self上
       // expose real self
       vm._self = vm;
+      // 初始化生命周期
       initLifecycle(vm);
+      // 初始化事件
       initEvents(vm);
+      // 初始化 render
       initRender(vm);
       callHook(vm, 'beforeCreate');
       initInjections(vm); // resolve injections before data/props

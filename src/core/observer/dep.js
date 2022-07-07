@@ -49,6 +49,8 @@ export default class Dep {
   }
 }
 
+// 这是一个动态的值, 全局只有一个,因为 js是单线程, 同一时间只能初始化一个组件 Watcher
+// FIXME: 模版里面有子组件的情况怎样处理??
 // The current target watcher being evaluated.
 // This is globally unique because only one watcher
 // can be evaluated at a time.

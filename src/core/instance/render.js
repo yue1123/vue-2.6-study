@@ -28,9 +28,11 @@ export function initRender (vm: Component) {
   // so that we get proper render context inside it.
   // args order: tag, data, children, normalizationType, alwaysNormalize
   // internal version is used by render functions compiled from templates
+  // 内部版本使用的渲染函数
   vm._c = (a, b, c, d) => createElement(vm, a, b, c, d, false)
   // normalization is always applied for the public version, used in
   // user-written render functions.
+  // 自定义 runder 函数使用的渲染函数
   vm.$createElement = (a, b, c, d) => createElement(vm, a, b, c, d, true)
 
   // $attrs & $listeners are exposed for easier HOC creation.
@@ -39,7 +41,7 @@ export function initRender (vm: Component) {
 
   /* istanbul ignore else */
   if (process.env.NODE_ENV !== 'production') {
-    // 定义$attrs 并且不允许修改
+    // 定义$attrs 并且不允许修改,开发环境给出警告
     defineReactive(
       vm,
       "$attrs",
@@ -49,7 +51,7 @@ export function initRender (vm: Component) {
       },
       true
     );
-    // 定义$listeners 并且不允许修改
+    // 定义$listeners 并且不允许修改,开发环境给出警告
     defineReactive(
       vm,
       "$listeners",
@@ -75,7 +77,7 @@ export function setCurrentRenderingInstance (vm: Component) {
 export function renderMixin (Vue: Class<Component>) {
   // install runtime convenience helpers
   installRenderHelpers(Vue.prototype)
-
+  // 挂载$nextTick方法
   Vue.prototype.$nextTick = function (fn: Function) {
     return nextTick(fn, this)
   }
