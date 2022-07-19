@@ -33,14 +33,14 @@
         arr: [1, 2, 3, 4, 5]
       }
     },
-    watch: {
-      name: {
-        handler(n) {
-          console.log(n)
-        },
-        deep: true
-      }
-    },
+    // watch: {
+    //   name: {
+    //     handler(n) {
+    //       console.log(n)
+    //     },
+    //     deep: true
+    //   }
+    // },
     methods: {
       add() {
         this.arr.splice(1, 0, '1000')
