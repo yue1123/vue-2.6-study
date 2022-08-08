@@ -10,7 +10,7 @@ if (process.env.NODE_ENV !== 'production') {
     'Infinity,undefined,NaN,isFinite,isNaN,' +
     'parseFloat,parseInt,decodeURI,decodeURIComponent,encodeURI,encodeURIComponent,' +
     'Math,Number,Date,Array,Object,Boolean,String,RegExp,Map,Set,JSON,Intl,BigInt,' +
-    'require' // for Webpack/Browserify
+    'require' // for Webpack/browserify
   )
 
   const warnNonPresent = (target, key) => {

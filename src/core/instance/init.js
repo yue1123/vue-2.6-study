@@ -10,6 +10,7 @@ import { initLifecycle, callHook } from './lifecycle'
 import { initProvide, initInjections } from './inject'
 import { extend, mergeOptions, formatComponentName } from '../util/index'
 
+// 全局的组件 uid,用于组件自增 id
 let uid = 0
 
 /**
@@ -54,9 +55,11 @@ export function initMixin (Vue: Class<Component>) {
     }
     /* istanbul ignore else */
     // 初始化proxy, 主要作用是代理模版语法中不认识的语法, 例如{{ Number(age) }}, 还有就是校验 以_和$开头的变量,是不是在 data中,是的话就报错
+    // 开发环境
     if (process.env.NODE_ENV !== 'production') {
       initProxy(vm)
     } else {
+      // 生产环境
       vm._renderProxy = vm
     }
     // 暴露真真的 vm 实例在vm._self上
@@ -90,7 +93,7 @@ export function initMixin (Vue: Class<Component>) {
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
   // 把组件的一些属性动态属性,保存在vm.$options中,访问速度可以更快
   // 代码小技巧: 用opts保存vm.$options的引用,通过opts来修改,避免直接用vm.$options 来修改可以简化代码,看着更简洁
-  
+
   const opts = vm.$options = Object.create(vm.constructor.options)
   // doing this because it's faster than dynamic enumeration.
   const parentVnode = options._parentVnode

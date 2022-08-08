@@ -14,8 +14,9 @@ function Vue (options) {
   this._init(options)
 }
 
-// 向Vue 原型注入_init初始化方法
+// 组件 init 逻辑合并到 Vue 构造函数上面
 initMixin(Vue)
+
 stateMixin(Vue)
 eventsMixin(Vue)
 lifecycleMixin(Vue)

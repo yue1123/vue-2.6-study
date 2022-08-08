@@ -4,23 +4,26 @@ export const emptyObject = Object.freeze({})
 
 // These helpers produce better VM code in JS engines due to their
 // explicitness and function inlining.
+// 是否是 undefined 或者 null
 export function isUndef (v: any): boolean %checks {
   return v === undefined || v === null
 }
 
+// 不是 undefined 和 null
 export function isDef (v: any): boolean %checks {
   return v !== undefined && v !== null
 }
-
+// 是否为真
 export function isTrue (v: any): boolean %checks {
   return v === true
 }
-
+// 是否为假
 export function isFalse (v: any): boolean %checks {
   return v === false
 }
 
 /**
+ * 检验是否是原始值
  * Check if value is primitive.
  */
 export function isPrimitive (value: any): boolean %checks {
@@ -46,7 +49,7 @@ export function isObject (obj: mixed): boolean %checks {
  * Get the raw type string of a value, e.g., [object Object].
  */
 const _toString = Object.prototype.toString
-
+// 获取引用类型值的真实类型,因为应用类型值获取都是[object Object].但是通过 prototype.toString可以获取到真实类型[object array].,再进一步截取即可获取类型array
 export function toRawType (value: any): string {
   return _toString.call(value).slice(8, -1)
 }
@@ -55,10 +58,12 @@ export function toRawType (value: any): string {
  * Strict object type check. Only returns true
  * for plain JavaScript objects.
  */
+// 校验是否是普通对象
 export function isPlainObject (obj: any): boolean {
   return _toString.call(obj) === '[object Object]'
 }
 
+//检验是否是正则对象
 export function isRegExp (v: any): boolean {
   return _toString.call(v) === '[object RegExp]'
 }
@@ -66,11 +71,14 @@ export function isRegExp (v: any): boolean {
 /**
  * Check if val is a valid array index.
  */
+// 判断一个值是否是一个有效的数组索引
+// Math.floor(n) === n 可以用来判断是否是一个整数
 export function isValidArrayIndex (val: any): boolean {
   const n = parseFloat(String(val))
   return n >= 0 && Math.floor(n) === n && isFinite(val)
 }
 
+// 判断一个值是否是 promise
 export function isPromise (val: any): boolean {
   return (
     isDef(val) &&
@@ -82,6 +90,7 @@ export function isPromise (val: any): boolean {
 /**
  * Convert a value to a string that is actually rendered.
  */
+// 将值转换为视图可呈现的文本,用于模版字符串中输出对象,数组一类数据
 export function toString (val: any): string {
   return val == null
     ? ''
@@ -94,6 +103,7 @@ export function toString (val: any): string {
  * Convert an input value to a number for persistence.
  * If the conversion fails, return original string.
  */
+// v-model.number 的实际方法
 export function toNumber (val: string): number | string {
   const n = parseFloat(val)
   return isNaN(n) ? val : n
@@ -103,6 +113,7 @@ export function toNumber (val: string): number | string {
  * Make a map and return a function for checking if a key
  * is in that map.
  */
+// 柯里化函数, 用于生成一个map,后续通过传入一个 key判断是否存在于 map中
 export function makeMap (
   str: string,
   expectsLowerCase?: boolean
@@ -120,16 +131,19 @@ export function makeMap (
 /**
  * Check if a tag is a built-in tag.
  */
+// 检查模版字符串中标签是否是内建 tag
 export const isBuiltInTag = makeMap('slot,component', true)
 
 /**
  * Check if an attribute is a reserved attribute.
  */
+// 检查一个属性是否是预设的属性
 export const isReservedAttribute = makeMap('key,ref,slot,slot-scope,is')
 
 /**
  * Remove an item from an array.
  */
+// 从一个数组中移除置顶的元素
 export function remove (arr: Array<any>, item: any): Array<any> | void {
   if (arr.length) {
     const index = arr.indexOf(item)
