@@ -49,7 +49,7 @@ export function isObject (obj: mixed): boolean %checks {
  * Get the raw type string of a value, e.g., [object Object].
  */
 const _toString = Object.prototype.toString
-// 获取引用类型值的真实类型,因为应用类型值获取都是[object Object].但是通过 prototype.toString可以获取到真实类型[object array].,再进一步截取即可获取类型array
+// 获取引用类型值的真实类型，因为应用类型值获取都是[object Object].但是通过 prototype.toString可以获取到真实类型[object array].,再进一步截取即可获取类型array
 export function toRawType (value: any): string {
   return _toString.call(value).slice(8, -1)
 }
@@ -90,7 +90,7 @@ export function isPromise (val: any): boolean {
 /**
  * Convert a value to a string that is actually rendered.
  */
-// 将值转换为视图可呈现的文本,用于模版字符串中输出对象,数组一类数据
+// 将值转换为视图可呈现的文本，用于模版字符串中输出对象，数组一类数据
 export function toString (val: any): string {
   return val == null
     ? ''
@@ -113,7 +113,7 @@ export function toNumber (val: string): number | string {
  * Make a map and return a function for checking if a key
  * is in that map.
  */
-// 柯里化函数, 用于生成一个map,后续通过传入一个 key判断是否存在于 map中
+// 柯里化函数，用于生成一个map，后续通过传入一个 key判断是否存在于 map中
 export function makeMap (
   str: string,
   expectsLowerCase?: boolean
@@ -156,6 +156,7 @@ export function remove (arr: Array<any>, item: any): Array<any> | void {
 /**
  * Check whether an object has the property.
  */
+// 检验一个属性是否是对象自身属性
 const hasOwnProperty = Object.prototype.hasOwnProperty
 export function hasOwn (obj: Object | Array<*>, key: string): boolean {
   return hasOwnProperty.call(obj, key)
@@ -164,7 +165,9 @@ export function hasOwn (obj: Object | Array<*>, key: string): boolean {
 /**
  * Create a cached version of a pure function.
  */
+// 相同的参数调用缓存函数结果
 export function cached<F: Function> (fn: F): F {
+  // 缓存map
   const cache = Object.create(null)
   return (function cachedFn (str: string) {
     const hit = cache[str]
@@ -175,6 +178,8 @@ export function cached<F: Function> (fn: F): F {
 /**
  * Camelize a hyphen-delimited string.
  */
+// 短横线分割小转驼峰
+// user-name ==> userName
 const camelizeRE = /-(\w)/g
 export const camelize = cached((str: string): string => {
   return str.replace(camelizeRE, (_, c) => c ? c.toUpperCase() : '')
@@ -183,13 +188,15 @@ export const camelize = cached((str: string): string => {
 /**
  * Capitalize a string.
  */
+// 首字符转大写
 export const capitalize = cached((str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1)
 })
-
 /**
  * Hyphenate a camelCase string.
  */
+// 驼峰命名
+// \B 匹配非单词边界，也就是说，不匹配大写开头的单词字母
 const hyphenateRE = /\B([A-Z])/g
 export const hyphenate = cached((str: string): string => {
   return str.replace(hyphenateRE, '-$1').toLowerCase()
@@ -229,9 +236,11 @@ export const bind = Function.prototype.bind
 /**
  * Convert an Array-like object to a real Array.
  */
+// 转换类数组成真实数组
 export function toArray (list: any, start?: number): Array<any> {
   start = start || 0
   let i = list.length - start
+  // 先生成一个指定长度的空占位数组,后填充数据会比空数组push,速度快一点,应为数组内存空间在一开始就是定义好的,而不需要二次寻址
   const ret: Array<any> = new Array(i)
   while (i--) {
     ret[i] = list[i + start]
@@ -242,6 +251,7 @@ export function toArray (list: any, start?: number): Array<any> {
 /**
  * Mix properties into target object.
  */
+// 将一个对象的属性浅拷贝给另一个对象,实现一个extend
 export function extend (to: Object, _from: ?Object): Object {
   for (const key in _from) {
     to[key] = _from[key]
@@ -250,9 +260,11 @@ export function extend (to: Object, _from: ?Object): Object {
 }
 
 /**
+ * 合并一个对象数组中所有对象的属性到一个大对象中
  * Merge an Array of Objects into a single Object.
+ * @example [{ user: 1 }, { name: 2 },{age:18}] ===> { user: 1, name: 2, age: 18 }
  */
-export function toObject (arr: Array<any>): Object {
+export function toObject (arr){
   const res = {}
   for (let i = 0; i < arr.length; i++) {
     if (arr[i]) {
@@ -265,6 +277,7 @@ export function toObject (arr: Array<any>): Object {
 /* eslint-disable no-unused-vars */
 
 /**
+ * 不做任何操作的函数
  * Perform no operation.
  * Stubbing args to make Flow happy without leaving useless transpiled code
  * with ...rest (https://flow.org/blog/2017/05/07/Strict-Function-Call-Arity/).
@@ -272,6 +285,7 @@ export function toObject (arr: Array<any>): Object {
 export function noop (a?: any, b?: any, c?: any) {}
 
 /**
+ * 始终返回 false 函数
  * Always return false.
  */
 export const no = (a?: any, b?: any, c?: any) => false
@@ -279,7 +293,9 @@ export const no = (a?: any, b?: any, c?: any) => false
 /* eslint-enable no-unused-vars */
 
 /**
+ * 返回一个相同的值
  * Return the same value.
+ * identity n.名词 恒等式
  */
 export const identity = (_: any) => _
 
@@ -293,6 +309,7 @@ export function genStaticKeys (modules: Array<ModuleOptions>): string {
 }
 
 /**
+ * 校验两个值是否大致相等,如果是两个对象,就校验他们是否有相同的形状
  * Check if two values are loosely equal - that is,
  * if they are plain objects, do they have the same shape?
  */
@@ -344,6 +361,7 @@ export function looseIndexOf (arr: Array<mixed>, val: mixed): number {
 }
 
 /**
+ * 确保一个函数只能被调用一次
  * Ensure a function is called only once.
  */
 export function once (fn: Function): Function {
