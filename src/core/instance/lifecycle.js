@@ -358,6 +358,7 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
 
 export function callHook (vm: Component, hook: string) {
   // #7573 disable dep collection when invoking lifecycle hooks
+  console.log(hook)
   pushTarget()
   // 取出组件 options 中,指定的 hook function
   // debugger

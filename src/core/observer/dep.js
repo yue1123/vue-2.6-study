@@ -62,6 +62,7 @@ const targetStack = []
 export function pushTarget (target: ?Watcher) {
   targetStack.push(target)
   Dep.target = target
+  console.log(target)
 }
 
 // 弹出一个栈尾元素,然后把 stack 的最后一个元素赋给 Dep.target, 恢复上一个,变更前的 Dep.target

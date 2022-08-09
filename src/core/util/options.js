@@ -361,6 +361,32 @@ function normalizeProps (options: Object, vm: ?Component) {
 /**
  * Normalize all injections into Object-based format
  */
+/**
+ * inject 的形式
+ * // 普通的数组
+ * inject: ['a', 'b']
+ *
+ * 别名
+ * inject: {
+ * // local key
+    localMessage: {
+      // injection key
+       from:  'message'
+    }
+ * // 默认值
+ * inject: {
+      message: {
+        from: 'message', // this is optional if using the same key for injection
+        default: 'default value'
+      },
+      user: {
+        // use a factory function for non-primitive values that are expensive
+        // to create, or ones that should be unique per component instance.
+        default: () => ({ name: 'John' })
+      }
+    }
+ */
+
 // 规范化处理 Inject
 function normalizeInject (options: Object, vm: ?Component) {
   const inject = options.inject

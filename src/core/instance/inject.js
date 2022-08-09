@@ -16,6 +16,7 @@ export function initProvide (vm: Component) {
 export function initInjections (vm: Component) {
   const result = resolveInject(vm.$options.inject, vm)
   if (result) {
+    // 不收集 inject 属性依赖,也就意味着 inject 不是响应式的
     toggleObserving(false)
     Object.keys(result).forEach(key => {
       /* istanbul ignore else */
@@ -36,10 +37,15 @@ export function initInjections (vm: Component) {
   }
 }
 
+// 获取 inject 的 key 对应的内容,没找到的话,给出提示
+// 这里提供的 inject 是经过  util/options.js/normalizeInject 规范化的
 export function resolveInject (inject: any, vm: Component): ?Object {
+  // 如果存在 inject options
   if (inject) {
     // inject is :any because flow is not smart enough to figure out cached
+    // 结果用一个对象保存
     const result = Object.create(null)
+    // 获取key
     const keys = hasSymbol
       ? Reflect.ownKeys(inject)
       : Object.keys(inject)
@@ -49,6 +55,7 @@ export function resolveInject (inject: any, vm: Component): ?Object {
       // #6574 in case the inject object is observed...
       if (key === '__ob__') continue
       const provideKey = inject[key].from
+      // 从当前元素,冒泡遍历父级元素,知道找到 inject key 对应的 provide key
       let source = vm
       while (source) {
         if (source._provided && hasOwn(source._provided, provideKey)) {
@@ -57,6 +64,7 @@ export function resolveInject (inject: any, vm: Component): ?Object {
         }
         source = source.$parent
       }
+      // 如果没有找到,就抛出错误
       if (!source) {
         if ('default' in inject[key]) {
           const provideDefault = inject[key].default

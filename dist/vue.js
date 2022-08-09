@@ -15,23 +15,26 @@
 
   // These helpers produce better VM code in JS engines due to their
   // explicitness and function inlining.
+  // 是否是 undefined 或者 null
   function isUndef (v) {
     return v === undefined || v === null
   }
 
+  // 不是 undefined 和 null
   function isDef (v) {
     return v !== undefined && v !== null
   }
-
+  // 是否为真
   function isTrue (v) {
     return v === true
   }
-
+  // 是否为假
   function isFalse (v) {
     return v === false
   }
 
   /**
+   * 检验是否是原始值
    * Check if value is primitive.
    */
   function isPrimitive (value) {
@@ -57,7 +60,7 @@
    * Get the raw type string of a value, e.g., [object Object].
    */
   var _toString = Object.prototype.toString;
-
+  // 获取引用类型值的真实类型，因为应用类型值获取都是[object Object].但是通过 prototype.toString可以获取到真实类型[object array].,再进一步截取即可获取类型array
   function toRawType (value) {
     return _toString.call(value).slice(8, -1)
   }
@@ -66,10 +69,12 @@
    * Strict object type check. Only returns true
    * for plain JavaScript objects.
    */
+  // 校验是否是普通对象
   function isPlainObject (obj) {
     return _toString.call(obj) === '[object Object]'
   }
 
+  //检验是否是正则对象
   function isRegExp (v) {
     return _toString.call(v) === '[object RegExp]'
   }
@@ -77,11 +82,14 @@
   /**
    * Check if val is a valid array index.
    */
+  // 判断一个值是否是一个有效的数组索引
+  // Math.floor(n) === n 可以用来判断是否是一个整数
   function isValidArrayIndex (val) {
     var n = parseFloat(String(val));
     return n >= 0 && Math.floor(n) === n && isFinite(val)
   }
 
+  // 判断一个值是否是 promise
   function isPromise (val) {
     return (
       isDef(val) &&
@@ -93,6 +101,7 @@
   /**
    * Convert a value to a string that is actually rendered.
    */
+  // 将值转换为视图可呈现的文本，用于模版字符串中输出对象，数组一类数据
   function toString (val) {
     return val == null
       ? ''
@@ -105,6 +114,7 @@
    * Convert an input value to a number for persistence.
    * If the conversion fails, return original string.
    */
+  // v-model.number 的实际方法
   function toNumber (val) {
     var n = parseFloat(val);
     return isNaN(n) ? val : n
@@ -114,6 +124,7 @@
    * Make a map and return a function for checking if a key
    * is in that map.
    */
+  // 柯里化函数，用于生成一个map，后续通过传入一个 key判断是否存在于 map中
   function makeMap (
     str,
     expectsLowerCase
@@ -131,16 +142,19 @@
   /**
    * Check if a tag is a built-in tag.
    */
+  // 检查模版字符串中标签是否是内建 tag
   var isBuiltInTag = makeMap('slot,component', true);
 
   /**
    * Check if an attribute is a reserved attribute.
    */
+  // 检查一个属性是否是预设的属性
   var isReservedAttribute = makeMap('key,ref,slot,slot-scope,is');
 
   /**
    * Remove an item from an array.
    */
+  // 从一个数组中移除置顶的元素
   function remove (arr, item) {
     if (arr.length) {
       var index = arr.indexOf(item);
@@ -153,6 +167,7 @@
   /**
    * Check whether an object has the property.
    */
+  // 检验一个属性是否是对象自身属性
   var hasOwnProperty = Object.prototype.hasOwnProperty;
   function hasOwn (obj, key) {
     return hasOwnProperty.call(obj, key)
@@ -161,7 +176,9 @@
   /**
    * Create a cached version of a pure function.
    */
+  // 相同的参数调用缓存函数结果
   function cached (fn) {
+    // 缓存map
     var cache = Object.create(null);
     return (function cachedFn (str) {
       var hit = cache[str];
@@ -172,6 +189,8 @@
   /**
    * Camelize a hyphen-delimited string.
    */
+  // 短横线分割小转驼峰
+  // user-name ==> userName
   var camelizeRE = /-(\w)/g;
   var camelize = cached(function (str) {
     return str.replace(camelizeRE, function (_, c) { return c ? c.toUpperCase() : ''; })
@@ -180,13 +199,15 @@
   /**
    * Capitalize a string.
    */
+  // 首字符转大写
   var capitalize = cached(function (str) {
     return str.charAt(0).toUpperCase() + str.slice(1)
   });
-
   /**
    * Hyphenate a camelCase string.
    */
+  // 驼峰命名
+  // \B 匹配非单词边界，也就是说，不匹配大写开头的单词字母
   var hyphenateRE = /\B([A-Z])/g;
   var hyphenate = cached(function (str) {
     return str.replace(hyphenateRE, '-$1').toLowerCase()
@@ -226,9 +247,11 @@
   /**
    * Convert an Array-like object to a real Array.
    */
+  // 转换类数组成真实数组
   function toArray (list, start) {
     start = start || 0;
     var i = list.length - start;
+    // 先生成一个指定长度的空占位数组,后填充数据会比空数组push,速度快一点,应为数组内存空间在一开始就是定义好的,而不需要二次寻址
     var ret = new Array(i);
     while (i--) {
       ret[i] = list[i + start];
@@ -239,6 +262,7 @@
   /**
    * Mix properties into target object.
    */
+  // 将一个对象的属性浅拷贝给另一个对象,实现一个extend
   function extend (to, _from) {
     for (var key in _from) {
       to[key] = _from[key];
@@ -247,9 +271,11 @@
   }
 
   /**
+   * 合并一个对象数组中所有对象的属性到一个大对象中
    * Merge an Array of Objects into a single Object.
+   * @example [{ user: 1 }, { name: 2 },{age:18}] ===> { user: 1, name: 2, age: 18 }
    */
-  function toObject (arr) {
+  function toObject (arr){
     var res = {};
     for (var i = 0; i < arr.length; i++) {
       if (arr[i]) {
@@ -262,6 +288,7 @@
   /* eslint-disable no-unused-vars */
 
   /**
+   * 不做任何操作的函数
    * Perform no operation.
    * Stubbing args to make Flow happy without leaving useless transpiled code
    * with ...rest (https://flow.org/blog/2017/05/07/Strict-Function-Call-Arity/).
@@ -269,6 +296,7 @@
   function noop (a, b, c) {}
 
   /**
+   * 始终返回 false 函数
    * Always return false.
    */
   var no = function (a, b, c) { return false; };
@@ -276,7 +304,9 @@
   /* eslint-enable no-unused-vars */
 
   /**
+   * 返回一个相同的值
    * Return the same value.
+   * identity n.名词 恒等式
    */
   var identity = function (_) { return _; };
 
@@ -290,6 +320,7 @@
   }
 
   /**
+   * 校验两个值是否大致相等,如果是两个对象,就校验他们是否有相同的形状
    * Check if two values are loosely equal - that is,
    * if they are plain objects, do they have the same shape?
    */
@@ -333,6 +364,7 @@
    * found in the array (if value is a plain object, the array must
    * contain an object of the same shape), or -1 if it is not present.
    */
+  // 找到数组中存在的相同值,存在就返回 index,否则就返回-1
   function looseIndexOf (arr, val) {
     for (var i = 0; i < arr.length; i++) {
       if (looseEqual(arr[i], val)) { return i }
@@ -341,6 +373,7 @@
   }
 
   /**
+   * 确保一个函数只能被调用一次
    * Ensure a function is called only once.
    */
   function once (fn) {
@@ -748,17 +781,21 @@
 
   // 这是一个动态的值, 全局只有一个,因为 js是单线程, 同一时间只能初始化一个组件 Watcher
   // FIXME: 模版里面有子组件的情况怎样处理??
+  // 答案就是用一个栈来存起来
+  // 当页面中有子组件时,全局的 watcher (也就是 Dep.target)会一直变,子组件 Watcher 会覆盖父级组件 Watcher,所以用一个栈来存起来,子组件完了能恢复父组件的 Watcher 引用
   // The current target watcher being evaluated.
   // This is globally unique because only one watcher
   // can be evaluated at a time.
   Dep.target = null;
   var targetStack = [];
-
+  // 往栈里面放一个 Watcher
   function pushTarget (target) {
     targetStack.push(target);
     Dep.target = target;
+    console.log(target);
   }
 
+  // 弹出一个栈尾元素,然后把 stack 的最后一个元素赋给 Dep.target, 恢复上一个,变更前的 Dep.target
   function popTarget () {
     targetStack.pop();
     Dep.target = targetStack[targetStack.length - 1];
@@ -1496,6 +1533,32 @@
   /**
    * Normalize all injections into Object-based format
    */
+  /**
+   * inject 的形式
+   * // 普通的数组
+   * inject: ['a', 'b']
+   *
+   * 别名
+   * inject: {
+   * // local key
+      localMessage: {
+        // injection key
+         from:  'message'
+      }
+   * // 默认值
+   * inject: {
+        message: {
+          from: 'message', // this is optional if using the same key for injection
+          default: 'default value'
+        },
+        user: {
+          // use a factory function for non-primitive values that are expensive
+          // to create, or ones that should be unique per component instance.
+          default: () => ({ name: 'John' })
+        }
+      }
+   */
+
   // 规范化处理 Inject
   function normalizeInject (options, vm) {
     var inject = options.inject;
@@ -2082,7 +2145,7 @@
       'Infinity,undefined,NaN,isFinite,isNaN,' +
       'parseFloat,parseInt,decodeURI,decodeURIComponent,encodeURI,encodeURIComponent,' +
       'Math,Number,Date,Array,Object,Boolean,String,RegExp,Map,Set,JSON,Intl,BigInt,' +
-      'require' // for Webpack/Browserify
+      'require' // for Webpack/browserify
     );
 
     var warnNonPresent = function (target, key) {
@@ -2482,6 +2545,7 @@
   function initInjections (vm) {
     var result = resolveInject(vm.$options.inject, vm);
     if (result) {
+      // 不收集 inject 属性依赖,也就意味着 inject 不是响应式的
       toggleObserving(false);
       Object.keys(result).forEach(function (key) {
         /* istanbul ignore else */
@@ -2500,10 +2564,15 @@
     }
   }
 
+  // 获取 inject 的 key 对应的内容,没找到的话,给出提示
+  // 这里提供的 inject 是经过  util/options.js/normalizeInject 规范化的
   function resolveInject (inject, vm) {
+    // 如果存在 inject options
     if (inject) {
       // inject is :any because flow is not smart enough to figure out cached
+      // 结果用一个对象保存
       var result = Object.create(null);
+      // 获取key
       var keys = hasSymbol
         ? Reflect.ownKeys(inject)
         : Object.keys(inject);
@@ -2513,6 +2582,7 @@
         // #6574 in case the inject object is observed...
         if (key === '__ob__') { continue }
         var provideKey = inject[key].from;
+        // 从当前元素,冒泡遍历父级元素,知道找到 inject key 对应的 provide key
         var source = vm;
         while (source) {
           if (source._provided && hasOwn(source._provided, provideKey)) {
@@ -2521,6 +2591,7 @@
           }
           source = source.$parent;
         }
+        // 如果没有找到,就抛出错误
         if (!source) {
           if ('default' in inject[key]) {
             var provideDefault = inject[key].default;
@@ -4312,6 +4383,7 @@
 
   function callHook (vm, hook) {
     // #7573 disable dep collection when invoking lifecycle hooks
+    console.log(hook);
     pushTarget();
     // 取出组件 options 中,指定的 hook function
     // debugger
@@ -5056,6 +5128,7 @@
 
   /*  */
 
+  // 全局的组件 uid,用于组件自增 id
   var uid$3 = 0;
 
   /**
@@ -5100,6 +5173,7 @@
       }
       /* istanbul ignore else */
       // 初始化proxy, 主要作用是代理模版语法中不认识的语法, 例如{{ Number(age) }}, 还有就是校验 以_和$开头的变量,是不是在 data中,是的话就报错
+      // 开发环境
       {
         initProxy(vm);
       }
@@ -5112,6 +5186,7 @@
       initEvents(vm);
       // 初始化 render
       initRender(vm);
+      // 调用 beforeCreate 生命周期钩子,表示组件正式进入运阶段
       callHook(vm, 'beforeCreate');
       initInjections(vm); // resolve injections before data/props
       initState(vm);
@@ -5134,7 +5209,7 @@
   function initInternalComponent (vm, options) {
     // 把组件的一些属性动态属性,保存在vm.$options中,访问速度可以更快
     // 代码小技巧: 用opts保存vm.$options的引用,通过opts来修改,避免直接用vm.$options 来修改可以简化代码,看着更简洁
-    
+
     var opts = vm.$options = Object.create(vm.constructor.options);
     // doing this because it's faster than dynamic enumeration.
     var parentVnode = options._parentVnode;
@@ -5198,8 +5273,9 @@
     this._init(options);
   }
 
-  // 向Vue 原型注入_init初始化方法
+  // 组件 init 逻辑合并到 Vue 构造函数上面
   initMixin(Vue);
+
   stateMixin(Vue);
   eventsMixin(Vue);
   lifecycleMixin(Vue);

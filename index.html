@@ -18,11 +18,16 @@
   <div>{{ name }}</div>
   <div>{{ name }}</div>
   <button @click="add">add</button>
+<!--  <com></com>-->
 </div>
 
 <script src="./dist/vue.js"></script>
 <script>
-  // const com = Vue.component(new)
+  // const a = new Vue({
+  //   name:'com',
+  //   template:'<div>woshizujian</div>'
+  // })
+  // Vue.component(a)
   const vm = new Vue({
     el: '#app',
     data() {
@@ -33,6 +38,7 @@
         arr: [1, 2, 3, 4, 5]
       }
     },
+    inject:{a:1,b:2},
     // watch: {
     //   name: {
     //     handler(n) {
@@ -48,6 +54,12 @@
     },
     beforeCreate(){
       console.log('mounted')
+    },
+    created(){
+      console.log(123333)
+    },
+    created(){
+      console.log(123333)
     }
   })
   console.log(vm)

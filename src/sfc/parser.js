@@ -11,6 +11,7 @@ const isSpecialTag = makeMap('script,style,template', true)
 /**
  * Parse a single-file component (*.vue) file into an SFC Descriptor Object.
  */
+// 解析单文件组件成一个组件描述对象
 export function parseComponent (
   content: string,
   options?: Object = {}
@@ -28,7 +29,7 @@ export function parseComponent (
   let warn = msg => {
     sfc.errors.push(msg)
   }
-
+  // 如果是开发环境, warn 信息还包含 start,end
   if (process.env.NODE_ENV !== 'production' && options.outputSourceRange) {
     warn = (msg, range) => {
       const data: WarningMessage = { msg }
