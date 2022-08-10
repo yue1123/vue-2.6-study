@@ -195,7 +195,7 @@ export const capitalize = cached((str: string): string => {
 /**
  * Hyphenate a camelCase string.
  */
-// 驼峰命名
+// 驼峰命名转横线连接命名
 // \B 匹配非单词边界，也就是说，不匹配大写开头的单词字母
 const hyphenateRE = /\B([A-Z])/g
 export const hyphenate = cached((str: string): string => {

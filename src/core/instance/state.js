@@ -49,6 +49,7 @@ export function proxy (target: Object, sourceKey: string, key: string) {
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
+  // 先初始化 props
   if (opts.props) initProps(vm, opts.props)
   if (opts.methods) initMethods(vm, opts.methods)
   if (opts.data) {
@@ -63,7 +64,7 @@ export function initState (vm: Component) {
 }
 
 function initProps (vm: Component, propsOptions: Object) {
-  // propsDate 主要用户测试
+  // propsData 记录了父组件向子组件传的值
   const propsData = vm.$options.propsData || {}
   const props = vm._props = {}
   // cache prop keys so that future props updates can iterate using Array

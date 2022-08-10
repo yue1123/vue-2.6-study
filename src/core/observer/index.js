@@ -45,9 +45,11 @@ export class Observer {
     this.vmCount = 0
     def(value, '__ob__', this)
     if (Array.isArray(value)) {
+      // 如果 __proto__ 可用,直接将拦截的 Array 方法赋给__proto__
       if (hasProto) {
         protoAugment(value, arrayMethods)
       } else {
+        // 不能用__proto__的话,就把拦截的 Array 方法赋给 value 本身
         copyAugment(value, arrayMethods, arrayKeys)
       }
       this.observeArray(value)

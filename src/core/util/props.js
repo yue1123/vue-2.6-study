@@ -17,7 +17,7 @@ type PropOptions = {
   required: ?boolean,
   validator: ?Function
 };
-
+// 校验 Prop：默认值处理 => 响应式 => Prop 断言(required, 是否符合 type 设定)
 export function validateProp (
   key: string,
   propOptions: Object,
@@ -31,21 +31,48 @@ export function validateProp (
   // boolean casting
   const booleanIndex = getTypeIndex(Boolean, prop.type)
   if (booleanIndex > -1) {
-    // 如果propsData没有prop key 并且改prop 没有配置default属性,直接赋值false
+    // 如果propsData没有prop key 并且改prop 没有配置default属性，直接赋值false
     if (absent && !hasOwn(prop, 'default')) {
       value = false
     } else if (value === '' || value === hyphenate(key)) {
+      // 举例：
+      /**
+       *
+        export default {
+          name: String,
+          nickName: [Boolean, String]
+        }
+        这种情况，nickName既可以是 Boolean 又可以是 String，组件在被调用的时候，形式就可以有以下两种
+        <com nick-name="nick-name" />
+        或
+        <com nick-name /> 这种形式的props会被转换成 <com nick-name="" />
+        模版在线解析：LINK: https://vue-template-explorer.netlify.app/#%3Ccom%20nick-name%20%2F%3E
+        function render() {
+          with(this) {
+            return _c('com', {
+              attrs: {
+                "nick-name": ""
+              }
+            })
+          }
+        }
+        所以，需要对其进行判断，决定默认值
+       *
+       */
       // only cast empty string / same name to boolean if
       // boolean has higher priority
+      // 如果配置的 Props Type 中没有 String 类型，stringIndex 就会是-1，默认值就会赋予 true
+      // 或者[Boolean,String]这种，Boolean 在 String前面，Boolean具有更高的优先级，booleanIndex < stringIndex满足，默认值就会赋予 true
       const stringIndex = getTypeIndex(String, prop.type)
       if (stringIndex < 0 || booleanIndex < stringIndex) {
         value = true
       }
     }
   }
-  // FIXME: here!!!
+  // 如果经过上面的步骤还是 undefined，说明父组件没有传递这个值，就尝试使用配置的默认值
   // check default value
   if (value === undefined) {
+    //
     value = getPropDefaultValue(vm, prop, key)
     // since the default value is a fresh copy,
     // make sure to observe it.
@@ -73,6 +100,7 @@ function getPropDefaultValue (vm: ?Component, prop: PropOptions, key: string): a
     return undefined
   }
   const def = prop.default
+  // 在开发环境，如果 default 值是 array 或者 Object，没有使用函数来包裹，就报错，因为他们的默认值必须要返回一个工厂函数。
   // warn against non-factory defaults for Object & Array
   if (process.env.NODE_ENV !== 'production' && isObject(def)) {
     warn(
@@ -84,6 +112,7 @@ function getPropDefaultValue (vm: ?Component, prop: PropOptions, key: string): a
   }
   // the raw prop value was also undefined from previous render,
   // return previous default value to avoid unnecessary watcher trigger
+  // 如果 propsData 保存的上一次的值也是 undefined，就返回上一次默认的 undefined
   if (vm && vm.$options.propsData &&
     vm.$options.propsData[key] === undefined &&
     vm._props[key] !== undefined
@@ -92,6 +121,7 @@ function getPropDefaultValue (vm: ?Component, prop: PropOptions, key: string): a
   }
   // call factory function for non-Function types
   // a value is Function if its prototype is function even across different execution context
+  // 判断 default 是否是工厂函数，如果是，就返回工厂函数调用的返回值，否则就返回本身
   return typeof def === 'function' && getType(prop.type) !== 'Function'
     ? def.call(vm)
     : def
@@ -100,6 +130,7 @@ function getPropDefaultValue (vm: ?Component, prop: PropOptions, key: string): a
 /**
  * Assert whether a prop is valid.
  */
+// 断言一个 Prop
 function assertProp (
   prop: PropOptions,
   name: string,
@@ -107,6 +138,7 @@ function assertProp (
   vm: ?Component,
   absent: boolean
 ) {
+  // 如果是一个必传的 Prop，没有传递，就抛出一个警告
   if (prop.required && absent) {
     warn(
       'Missing required prop: "' + name + '"',
@@ -114,24 +146,30 @@ function assertProp (
     )
     return
   }
+  // value 为空，且没有非必传
   if (value == null && !prop.required) {
     return
   }
+  // 定义了 type，就进行 type断言
   let type = prop.type
   let valid = !type || type === true
   const expectedTypes = []
   if (type) {
+    // 如果 type 不是一个数组，就转换成一个数组
     if (!Array.isArray(type)) {
       type = [type]
     }
+    // 紧接着遍历 type，找到一个符合就停止
     for (let i = 0; i < type.length && !valid; i++) {
       const assertedType = assertType(value, type[i], vm)
+      // 保存获取的真实 type
       expectedTypes.push(assertedType.expectedType || '')
       valid = assertedType.valid
     }
   }
 
   const haveExpectedTypes = expectedTypes.some(t => t)
+  // value 都不符合 type，并且 type 存在有效值，就抛出警告
   if (!valid && haveExpectedTypes) {
     warn(
       getInvalidTypeMessage(name, value, expectedTypes),
@@ -139,6 +177,7 @@ function assertProp (
     )
     return
   }
+  // 如果设置了validator，调用validator，如果返回值是 false，就抛出警告
   const validator = prop.validator
   if (validator) {
     if (!validator(value)) {
@@ -190,6 +229,7 @@ const functionTypeCheckRE = /^\s*function (\w+)/
  * because a simple equality check will fail when running
  * across different vms / iframes.
  */
+// 获取构造函数类型
 function getType (fn) {
   const match = fn && fn.toString().match(functionTypeCheckRE)
   return match ? match[1] : ''
