@@ -18,6 +18,7 @@ type PropOptions = {
   validator: ?Function
 };
 // 校验 Prop：默认值处理 => 响应式 => Prop 断言(required, 是否符合 type 设定)
+// https://ustbhuangyi.github.io/vue-analysis/v2/reactive/props.html#%E5%88%9D%E5%A7%8B%E5%8C%96
 export function validateProp (
   key: string,
   propOptions: Object,
