@@ -27,9 +27,11 @@ export function validateProp (
   const prop = propOptions[key]
   const absent = !hasOwn(propsData, key)
   let value = propsData[key]
+  // 处理 Boolean 类型的prop 默认值
   // boolean casting
   const booleanIndex = getTypeIndex(Boolean, prop.type)
   if (booleanIndex > -1) {
+    // 如果propsData没有prop key 并且改prop 没有配置default属性,直接赋值false
     if (absent && !hasOwn(prop, 'default')) {
       value = false
     } else if (value === '' || value === hyphenate(key)) {
@@ -41,6 +43,7 @@ export function validateProp (
       }
     }
   }
+  // FIXME: here!!!
   // check default value
   if (value === undefined) {
     value = getPropDefaultValue(vm, prop, key)

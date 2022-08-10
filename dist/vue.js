@@ -1709,9 +1709,11 @@
     var prop = propOptions[key];
     var absent = !hasOwn(propsData, key);
     var value = propsData[key];
+    // 处理 Boolean 类型的prop 默认值
     // boolean casting
     var booleanIndex = getTypeIndex(Boolean, prop.type);
     if (booleanIndex > -1) {
+      // 如果propsData没有prop key 并且改prop 没有配置default属性,直接赋值false
       if (absent && !hasOwn(prop, 'default')) {
         value = false;
       } else if (value === '' || value === hyphenate(key)) {
@@ -1723,6 +1725,7 @@
         }
       }
     }
+    // FIXME: here!!!
     // check default value
     if (value === undefined) {
       value = getPropDefaultValue(vm, prop, key);
@@ -4803,7 +4806,7 @@
     };
     Object.defineProperty(target, key, sharedPropertyDefinition);
   }
-
+  // 初始化props,methods,data,computed,以及watch
   function initState (vm) {
     vm._watchers = [];
     var opts = vm.$options;
@@ -4821,11 +4824,14 @@
   }
 
   function initProps (vm, propsOptions) {
+    // propsDate 主要用户测试
     var propsData = vm.$options.propsData || {};
     var props = vm._props = {};
     // cache prop keys so that future props updates can iterate using Array
     // instead of dynamic object key enumeration.
+    // 缓存 prop 键，以便将来的 props 更新可以使用 Array 进行迭代，而不是动态对象键枚举。
     var keys = vm.$options._propKeys = [];
+    // 没有$parent 说明是根组件
     var isRoot = !vm.$parent;
     // root instance props should be converted
     if (!isRoot) {
@@ -5165,6 +5171,7 @@
         initInternalComponent(vm, options);
       } else {
         // 单例模式options合并逻辑
+        console.log(vm.constructor, resolveConstructorOptions(vm.constructor));
         vm.$options = mergeOptions(
           resolveConstructorOptions(vm.constructor),
           options || {},
@@ -5187,11 +5194,13 @@
       // 初始化 render
       initRender(vm);
       // 调用 beforeCreate 生命周期钩子,表示组件正式进入运阶段
-      callHook(vm, 'beforeCreate');
+      callHook(vm, "beforeCreate");
+      // 初始话 inject
       initInjections(vm); // resolve injections before data/props
+      // 初始化props,methods,data,computed,以及watch
       initState(vm);
       initProvide(vm); // resolve provide after data/props
-      callHook(vm, 'created');
+      callHook(vm, "created");
 
       /* istanbul ignore if */
       if (config.performance && mark) {
@@ -5228,6 +5237,7 @@
     }
   }
 
+  // 获取组件默认选项(全局的components: transition, keep-alive 全局的directives: model,show等...),以及用Vue.extend继承来的属性
   function resolveConstructorOptions (Ctor) {
     var options = Ctor.options;
     if (Ctor.super) {

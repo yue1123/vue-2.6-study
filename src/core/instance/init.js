@@ -20,73 +20,76 @@ let uid = 0
 export function initMixin (Vue: Class<Component>) {
   Vue.prototype._init = function (options?: Object) {
     // 保存当前vm 实例
-    const vm: Component = this
+    const vm: Component = this;
     // a uid
     // 每个实例都有一个自增的uid
-    vm._uid = uid++
+    vm._uid = uid++;
 
     // ======= 用于性能分析 ========
-    let startTag, endTag
+    let startTag, endTag;
     /* istanbul ignore if */
-    if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
-      startTag = `vue-perf-start:${vm._uid}`
-      endTag = `vue-perf-end:${vm._uid}`
-      mark(startTag)
+    if (process.env.NODE_ENV !== "production" && config.performance && mark) {
+      startTag = `vue-perf-start:${vm._uid}`;
+      endTag = `vue-perf-end:${vm._uid}`;
+      mark(startTag);
     }
     // ===========================
 
     // 一个标志避免 this本身被 observed
     // a flag to avoid this being observed
-    vm._isVue = true
+    vm._isVue = true;
     // merge options
     // 组件模式的options 合并逻辑
     if (options && options._isComponent) {
       // optimize internal component instantiation
       // since dynamic options merging is pretty slow, and none of the
       // internal component options needs special treatment.
-      initInternalComponent(vm, options)
+      initInternalComponent(vm, options);
     } else {
       // 单例模式options合并逻辑
+      console.log(vm.constructor, resolveConstructorOptions(vm.constructor));
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
         vm
-      )
+      );
     }
     /* istanbul ignore else */
     // 初始化proxy, 主要作用是代理模版语法中不认识的语法, 例如{{ Number(age) }}, 还有就是校验 以_和$开头的变量,是不是在 data中,是的话就报错
     // 开发环境
-    if (process.env.NODE_ENV !== 'production') {
-      initProxy(vm)
+    if (process.env.NODE_ENV !== "production") {
+      initProxy(vm);
     } else {
       // 生产环境
-      vm._renderProxy = vm
+      vm._renderProxy = vm;
     }
     // 暴露真真的 vm 实例在vm._self上
     // expose real self
-    vm._self = vm
+    vm._self = vm;
     // 初始化生命周期
-    initLifecycle(vm)
+    initLifecycle(vm);
     // 初始化事件
-    initEvents(vm)
+    initEvents(vm);
     // 初始化 render
-    initRender(vm)
+    initRender(vm);
     // 调用 beforeCreate 生命周期钩子,表示组件正式进入运阶段
-    callHook(vm, 'beforeCreate')
-    initInjections(vm) // resolve injections before data/props
-    initState(vm)
-    initProvide(vm) // resolve provide after data/props
-    callHook(vm, 'created')
+    callHook(vm, "beforeCreate");
+    // 初始话 inject
+    initInjections(vm); // resolve injections before data/props
+    // 初始化props,methods,data,computed,以及watch
+    initState(vm);
+    initProvide(vm); // resolve provide after data/props
+    callHook(vm, "created");
 
     /* istanbul ignore if */
-    if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
-      vm._name = formatComponentName(vm, false)
-      mark(endTag)
-      measure(`vue ${vm._name} init`, startTag, endTag)
+    if (process.env.NODE_ENV !== "production" && config.performance && mark) {
+      vm._name = formatComponentName(vm, false);
+      mark(endTag);
+      measure(`vue ${vm._name} init`, startTag, endTag);
     }
 
     if (vm.$options.el) {
-      vm.$mount(vm.$options.el)
+      vm.$mount(vm.$options.el);
     }
   }
 }
@@ -113,6 +116,7 @@ export function initInternalComponent (vm: Component, options: InternalComponent
   }
 }
 
+// 获取组件默认选项(全局的components: transition, keep-alive 全局的directives: model,show等...),以及用Vue.extend继承来的属性
 export function resolveConstructorOptions (Ctor: Class<Component>) {
   let options = Ctor.options
   if (Ctor.super) {

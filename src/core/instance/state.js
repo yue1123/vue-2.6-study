@@ -45,7 +45,7 @@ export function proxy (target: Object, sourceKey: string, key: string) {
   }
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
-
+// 初始化props,methods,data,computed,以及watch
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
@@ -63,11 +63,14 @@ export function initState (vm: Component) {
 }
 
 function initProps (vm: Component, propsOptions: Object) {
+  // propsDate 主要用户测试
   const propsData = vm.$options.propsData || {}
   const props = vm._props = {}
   // cache prop keys so that future props updates can iterate using Array
   // instead of dynamic object key enumeration.
+  // 缓存 prop 键，以便将来的 props 更新可以使用 Array 进行迭代，而不是动态对象键枚举。
   const keys = vm.$options._propKeys = []
+  // 没有$parent 说明是根组件
   const isRoot = !vm.$parent
   // root instance props should be converted
   if (!isRoot) {
