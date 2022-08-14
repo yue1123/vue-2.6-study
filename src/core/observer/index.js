@@ -141,26 +141,43 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
+  // 定义一个 dep 对象,用于记录该属性所对应的watcher
   const dep = new Dep()
-
+  // 获取对象指定属性的描述配置
+  /**
+   * {
+   *    value: xxx,
+   *    writable: true/false,
+   *    enumerable: true/false,
+   *    configurable: true/false
+   * }
+   */
   const property = Object.getOwnPropertyDescriptor(obj, key)
+  // 如果描述配置存在且不可配置,直接返回
   if (property && property.configurable === false) {
     return
   }
 
   // cater for pre-defined getter/setters
+  // 属性已有的 get
   const getter = property && property.get
+  // 属性已有的 set
   const setter = property && property.set
+  // FIXME: ??? 这句话不是很理解
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key]
   }
 
+  // 子属性响应式
+  // 如果不是没有指定浅层响应式,就将子属性也变为响应式
   let childOb = !shallow && observe(val)
   Object.defineProperty(obj, key, {
     enumerable: true,
     configurable: true,
     get: function reactiveGetter () {
       const value = getter ? getter.call(obj) : val
+      // FIXME: ??? 这句话不是很理解
+      // Dep.target 是一个当前处在全局的活跃的 Watcher
       if (Dep.target) {
         dep.depend()
         if (childOb) {

@@ -206,7 +206,7 @@
   /**
    * Hyphenate a camelCase string.
    */
-  // 驼峰命名
+  // 驼峰命名转横线连接命名
   // \B 匹配非单词边界，也就是说，不匹配大写开头的单词字母
   var hyphenateRE = /\B([A-Z])/g;
   var hyphenate = cached(function (str) {
@@ -964,9 +964,11 @@
     this.vmCount = 0;
     def(value, '__ob__', this);
     if (Array.isArray(value)) {
+      // 如果 __proto__ 可用,直接将拦截的 Array 方法赋给__proto__
       if (hasProto) {
         protoAugment(value, arrayMethods);
       } else {
+        // 不能用__proto__的话,就把拦截的 Array 方法赋给 value 本身
         copyAugment(value, arrayMethods, arrayKeys);
       }
       this.observeArray(value);
@@ -1699,7 +1701,8 @@
   /*  */
 
 
-
+  // 校验 Prop：默认值处理 => 响应式 => Prop 断言(required, 是否符合 type 设定)
+  // https://ustbhuangyi.github.io/vue-analysis/v2/reactive/props.html#%E5%88%9D%E5%A7%8B%E5%8C%96
   function validateProp (
     key,
     propOptions,
@@ -1713,21 +1716,48 @@
     // boolean casting
     var booleanIndex = getTypeIndex(Boolean, prop.type);
     if (booleanIndex > -1) {
-      // 如果propsData没有prop key 并且改prop 没有配置default属性,直接赋值false
+      // 如果propsData没有prop key 并且改prop 没有配置default属性，直接赋值false
       if (absent && !hasOwn(prop, 'default')) {
         value = false;
       } else if (value === '' || value === hyphenate(key)) {
+        // 举例：
+        /**
+         *
+          export default {
+            name: String,
+            nickName: [Boolean, String]
+          }
+          这种情况，nickName既可以是 Boolean 又可以是 String，组件在被调用的时候，形式就可以有以下两种
+          <com nick-name="nick-name" />
+          或
+          <com nick-name /> 这种形式的props会被转换成 <com nick-name="" />
+          模版在线解析：LINK: https://vue-template-explorer.netlify.app/#%3Ccom%20nick-name%20%2F%3E
+          function render() {
+            with(this) {
+              return _c('com', {
+                attrs: {
+                  "nick-name": ""
+                }
+              })
+            }
+          }
+          所以，需要对其进行判断，决定默认值
+         *
+         */
         // only cast empty string / same name to boolean if
         // boolean has higher priority
+        // 如果配置的 Props Type 中没有 String 类型，stringIndex 就会是-1，默认值就会赋予 true
+        // 或者[Boolean,String]这种，Boolean 在 String前面，Boolean具有更高的优先级，booleanIndex < stringIndex满足，默认值就会赋予 true
         var stringIndex = getTypeIndex(String, prop.type);
         if (stringIndex < 0 || booleanIndex < stringIndex) {
           value = true;
         }
       }
     }
-    // FIXME: here!!!
+    // 如果经过上面的步骤还是 undefined，说明父组件没有传递这个值，就尝试使用配置的默认值
     // check default value
     if (value === undefined) {
+      //
       value = getPropDefaultValue(vm, prop, key);
       // since the default value is a fresh copy,
       // make sure to observe it.
@@ -1751,6 +1781,7 @@
       return undefined
     }
     var def = prop.default;
+    // 在开发环境，如果 default 值是 array 或者 Object，没有使用函数来包裹，就报错，因为他们的默认值必须要返回一个工厂函数。
     // warn against non-factory defaults for Object & Array
     if (isObject(def)) {
       warn(
@@ -1762,6 +1793,7 @@
     }
     // the raw prop value was also undefined from previous render,
     // return previous default value to avoid unnecessary watcher trigger
+    // 如果 propsData 保存的上一次的值也是 undefined，就返回上一次默认的 undefined
     if (vm && vm.$options.propsData &&
       vm.$options.propsData[key] === undefined &&
       vm._props[key] !== undefined
@@ -1770,6 +1802,7 @@
     }
     // call factory function for non-Function types
     // a value is Function if its prototype is function even across different execution context
+    // 判断 default 是否是工厂函数，如果是，就返回工厂函数调用的返回值，否则就返回本身
     return typeof def === 'function' && getType(prop.type) !== 'Function'
       ? def.call(vm)
       : def
@@ -1778,6 +1811,7 @@
   /**
    * Assert whether a prop is valid.
    */
+  // 断言一个 Prop
   function assertProp (
     prop,
     name,
@@ -1785,6 +1819,7 @@
     vm,
     absent
   ) {
+    // 如果是一个必传的 Prop，没有传递，就抛出一个警告
     if (prop.required && absent) {
       warn(
         'Missing required prop: "' + name + '"',
@@ -1792,24 +1827,30 @@
       );
       return
     }
+    // value 为空，且没有非必传
     if (value == null && !prop.required) {
       return
     }
+    // 定义了 type，就进行 type断言
     var type = prop.type;
     var valid = !type || type === true;
     var expectedTypes = [];
     if (type) {
+      // 如果 type 不是一个数组，就转换成一个数组
       if (!Array.isArray(type)) {
         type = [type];
       }
+      // 紧接着遍历 type，找到一个符合就停止
       for (var i = 0; i < type.length && !valid; i++) {
         var assertedType = assertType(value, type[i], vm);
+        // 保存获取的真实 type
         expectedTypes.push(assertedType.expectedType || '');
         valid = assertedType.valid;
       }
     }
 
     var haveExpectedTypes = expectedTypes.some(function (t) { return t; });
+    // value 都不符合 type，并且 type 存在有效值，就抛出警告
     if (!valid && haveExpectedTypes) {
       warn(
         getInvalidTypeMessage(name, value, expectedTypes),
@@ -1817,6 +1858,7 @@
       );
       return
     }
+    // 如果设置了validator，调用validator，如果返回值是 false，就抛出警告
     var validator = prop.validator;
     if (validator) {
       if (!validator(value)) {
@@ -1865,6 +1907,7 @@
    * because a simple equality check will fail when running
    * across different vms / iframes.
    */
+  // 获取构造函数类型
   function getType (fn) {
     var match = fn && fn.toString().match(functionTypeCheckRE);
     return match ? match[1] : ''
@@ -4810,6 +4853,7 @@
   function initState (vm) {
     vm._watchers = [];
     var opts = vm.$options;
+    // 先初始化 props
     if (opts.props) { initProps(vm, opts.props); }
     if (opts.methods) { initMethods(vm, opts.methods); }
     if (opts.data) {
@@ -4824,7 +4868,7 @@
   }
 
   function initProps (vm, propsOptions) {
-    // propsDate 主要用户测试
+    // propsData 记录了父组件向子组件传的值
     var propsData = vm.$options.propsData || {};
     var props = vm._props = {};
     // cache prop keys so that future props updates can iterate using Array
@@ -4865,6 +4909,7 @@
       // static props are already proxied on the component's prototype
       // during Vue.extend(). We only need to proxy props defined at
       // instantiation here.
+      // 将_props 属性代理到 vm 实例上,使得不需要 this._props.xxx 访问,只需要 this.xxx访问
       if (!(key in vm)) {
         proxy(vm, "_props", key);
       }
@@ -4879,6 +4924,8 @@
     data = vm._data = typeof data === 'function'
       ? getData(data, vm)
       : data || {};
+    // 如果 data 是函数,但是返回值不是一个对象的话,
+    // 就手动赋值空对象,并在开发环境给出警告
     if (!isPlainObject(data)) {
       data = {};
       warn(
@@ -5029,6 +5076,7 @@
     var props = vm.$options.props;
     for (var key in methods) {
       {
+        // 如果methods 不是一个函数,给出警告
         if (typeof methods[key] !== 'function') {
           warn(
             "Method \"" + key + "\" has type \"" + (typeof methods[key]) + "\" in the component definition. " +
@@ -5036,12 +5084,14 @@
             vm
           );
         }
+        // 判断 methods 中的方法是否在 props 中定义了
         if (props && hasOwn(props, key)) {
           warn(
             ("Method \"" + key + "\" has already been defined as a prop."),
             vm
           );
         }
+        // 检查 methods 是否是 Vue 实例上面定义过的方法 并且 以$ 或者 _ 线命名
         if ((key in vm) && isReserved(key)) {
           warn(
             "Method \"" + key + "\" conflicts with an existing Vue instance method. " +
@@ -5049,6 +5099,9 @@
           );
         }
       }
+      // methods 上的方法挂载到vm实例上面, 通过 this可以直接访问
+      // 如果 method 类型函数,就赋值一个空函数,避免报错
+      // 如果是函数,就绑定this指向 vm
       vm[key] = typeof methods[key] !== 'function' ? noop : bind(methods[key], vm);
     }
   }

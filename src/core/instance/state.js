@@ -107,6 +107,7 @@ function initProps (vm: Component, propsOptions: Object) {
     // static props are already proxied on the component's prototype
     // during Vue.extend(). We only need to proxy props defined at
     // instantiation here.
+    // 将_props 属性代理到 vm 实例上,使得不需要 this._props.xxx 访问,只需要 this.xxx访问
     if (!(key in vm)) {
       proxy(vm, `_props`, key)
     }
@@ -119,6 +120,8 @@ function initData (vm: Component) {
   data = vm._data = typeof data === 'function'
     ? getData(data, vm)
     : data || {}
+  // 如果 data 是函数,但是返回值不是一个对象的话,
+  // 就手动赋值空对象,并在开发环境给出警告
   if (!isPlainObject(data)) {
     data = {}
     process.env.NODE_ENV !== 'production' && warn(
@@ -270,6 +273,7 @@ function initMethods (vm: Component, methods: Object) {
   const props = vm.$options.props
   for (const key in methods) {
     if (process.env.NODE_ENV !== 'production') {
+      // 如果methods 不是一个函数,给出警告
       if (typeof methods[key] !== 'function') {
         warn(
           `Method "${key}" has type "${typeof methods[key]}" in the component definition. ` +
@@ -277,12 +281,14 @@ function initMethods (vm: Component, methods: Object) {
           vm
         )
       }
+      // 判断 methods 中的方法是否在 props 中定义了
       if (props && hasOwn(props, key)) {
         warn(
           `Method "${key}" has already been defined as a prop.`,
           vm
         )
       }
+      // 检查 methods 是否是 Vue 实例上面定义过的方法 并且 以$ 或者 _ 线命名
       if ((key in vm) && isReserved(key)) {
         warn(
           `Method "${key}" conflicts with an existing Vue instance method. ` +
@@ -290,6 +296,9 @@ function initMethods (vm: Component, methods: Object) {
         )
       }
     }
+    // methods 上的方法挂载到vm实例上面, 通过 this可以直接访问
+    // 如果 method 类型函数,就赋值一个空函数,避免报错
+    // 如果是函数,就绑定this指向 vm
     vm[key] = typeof methods[key] !== 'function' ? noop : bind(methods[key], vm)
   }
 }

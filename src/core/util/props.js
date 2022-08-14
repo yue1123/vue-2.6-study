@@ -79,6 +79,7 @@ export function validateProp (
     // make sure to observe it.
     const prevShouldObserve = shouldObserve
     toggleObserving(true)
+    // 转换成响应式
     observe(value)
     toggleObserving(prevShouldObserve)
   }
