@@ -87,7 +87,7 @@ export function initMixin (Vue: Class<Component>) {
       mark(endTag);
       measure(`vue ${vm._name} init`, startTag, endTag);
     }
-
+    // 如果提供了el, 调用$mount挂载组件
     if (vm.$options.el) {
       vm.$mount(vm.$options.el);
     }

@@ -58,11 +58,11 @@ export default class Dep {
 // can be evaluated at a time.
 Dep.target = null
 const targetStack = []
-// 往栈里面放一个 Watcher
+// 往栈里面放一个 Watcher, 仅在 Watcher.prototype.get 方法调用是,该值才不为空,其他时候都是 undefined
 export function pushTarget (target: ?Watcher) {
   targetStack.push(target)
   Dep.target = target
-  console.log(target)
+  console.log(target,'Dep.target')
 }
 
 // 弹出一个栈尾元素,然后把 stack 的最后一个元素赋给 Dep.target, 恢复上一个,变更前的 Dep.target

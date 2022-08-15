@@ -788,11 +788,11 @@
   // can be evaluated at a time.
   Dep.target = null;
   var targetStack = [];
-  // 往栈里面放一个 Watcher
+  // 往栈里面放一个 Watcher, 仅在 Watcher.prototype.get 方法调用是,该值才不为空,其他时候都是 undefined
   function pushTarget (target) {
     targetStack.push(target);
     Dep.target = target;
-    console.log(target);
+    console.log(target,'Dep.target');
   }
 
   // 弹出一个栈尾元素,然后把 stack 的最后一个元素赋给 Dep.target, 恢复上一个,变更前的 Dep.target
@@ -948,7 +948,7 @@
    */
   var shouldObserve = true;
 
-  function toggleObserving (value) {
+  function toggleObserving(value) {
     shouldObserve = value;
   }
 
@@ -958,11 +958,11 @@
    * object's property keys into getter/setters that
    * collect dependencies and dispatch updates.
    */
-  var Observer = function Observer (value) {
+  var Observer = function Observer(value) {
     this.value = value;
     this.dep = new Dep();
     this.vmCount = 0;
-    def(value, '__ob__', this);
+    def(value, "__ob__", this);
     if (Array.isArray(value)) {
       // 如果 __proto__ 可用,直接将拦截的 Array 方法赋给__proto__
       if (hasProto) {
@@ -1004,7 +1004,7 @@
    * Augment a target Object or Array by intercepting
    * the prototype chain using __proto__
    */
-  function protoAugment (target, src) {
+  function protoAugment(target, src) {
     /* eslint-disable no-proto */
     target.__proto__ = src;
     /* eslint-enable no-proto */
@@ -1015,7 +1015,7 @@
    * hidden properties.
    */
   /* istanbul ignore next */
-  function copyAugment (target, src, keys) {
+  function copyAugment(target, src, keys) {
     for (var i = 0, l = keys.length; i < l; i++) {
       var key = keys[i];
       def(target, key, src[key]);
@@ -1023,16 +1023,25 @@
   }
 
   /**
+   * 尝试为属性值value创建一个observer
+   * 如果成功observed,返回一个新的observer
+   * 或者value已经有一个observer,则返回已经存在的observer
    * Attempt to create an observer instance for a value,
    * returns the new observer if successfully observed,
    * or the existing observer if the value already has one.
    */
-  function observe (value, asRootData) {
+  /**
+   *
+   * @param {*} value 需要被观察者的对象
+   * @param {*} asRootData 仅data对象初始化观察者时,该值才为true
+   */
+  function observe(value, asRootData) {
+    // 如果value 不是一个对象或者是VNode,直接放回
     if (!isObject(value) || value instanceof VNode) {
-      return
+      return;
     }
     var ob;
-    if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
+    if (hasOwn(value, "__ob__") && value.__ob__ instanceof Observer) {
       ob = value.__ob__;
     } else if (
       shouldObserve &&
@@ -1046,39 +1055,59 @@
     if (asRootData && ob) {
       ob.vmCount++;
     }
-    return ob
+    return ob;
   }
 
   /**
    * Define a reactive property on an Object.
    */
-  function defineReactive$$1 (
+  function defineReactive$$1(
     obj,
     key,
     val,
     customSetter,
     shallow
   ) {
+    // 定义一个 dep 对象,用于记录该属性所对应的watcher
     var dep = new Dep();
-
+    // 获取对象指定属性的描述配置
+    /**
+     * {
+     *    value: xxx,
+     *    writable: true/false,
+     *    enumerable: true/false,
+     *    configurable: true/false
+     * }
+     */
     var property = Object.getOwnPropertyDescriptor(obj, key);
+    // 如果描述配置存在且不可配置,直接返回
     if (property && property.configurable === false) {
-      return
+      return;
     }
 
     // cater for pre-defined getter/setters
+    // 属性已有的 get
     var getter = property && property.get;
+    // 属性已有的 set
     var setter = property && property.set;
+    // FIXME: ??? 这句话不是很理解
     if ((!getter || setter) && arguments.length === 2) {
       val = obj[key];
     }
 
+    // 子属性响应式
+    // 如果不是没有指定浅层响应式,就将子属性也变为响应式
     var childOb = !shallow && observe(val);
     Object.defineProperty(obj, key, {
       enumerable: true,
       configurable: true,
-      get: function reactiveGetter () {
+      get: function reactiveGetter() {
         var value = getter ? getter.call(obj) : val;
+        // FIXME: ??? 这句话不是很理解
+        // Dep.target 是一个当前处在全局的活跃的 Watcher
+        // get 触发依赖手机
+        // eslint-disable-next-line no-debugger
+        // debugger
         if (Dep.target) {
           dep.depend();
           if (childOb) {
@@ -1088,20 +1117,20 @@
             }
           }
         }
-        return value
+        return value;
       },
-      set: function reactiveSetter (newVal) {
+      set: function reactiveSetter(newVal) {
         var value = getter ? getter.call(obj) : val;
         /* eslint-disable no-self-compare */
         if (newVal === value || (newVal !== newVal && value !== value)) {
-          return
+          return;
         }
         /* eslint-enable no-self-compare */
         if (customSetter) {
           customSetter();
         }
         // #7981: for accessor properties without setter
-        if (getter && !setter) { return }
+        if (getter && !setter) { return; }
         if (setter) {
           setter.call(obj, newVal);
         } else {
@@ -1109,7 +1138,7 @@
         }
         childOb = !shallow && observe(newVal);
         dep.notify();
-      }
+      },
     });
   }
 
@@ -1118,63 +1147,69 @@
    * triggers change notification if the property doesn't
    * already exist.
    */
-  function set (target, key, val) {
-    if (isUndef(target) || isPrimitive(target)
+  function set(target, key, val) {
+    if (
+      isUndef(target) || isPrimitive(target)
     ) {
-      warn(("Cannot set reactive property on undefined, null, or primitive value: " + ((target))));
+      warn(
+        ("Cannot set reactive property on undefined, null, or primitive value: " + ((target)))
+      );
     }
     if (Array.isArray(target) && isValidArrayIndex(key)) {
       target.length = Math.max(target.length, key);
       target.splice(key, 1, val);
-      return val
+      return val;
     }
     if (key in target && !(key in Object.prototype)) {
       target[key] = val;
-      return val
+      return val;
     }
     var ob = (target).__ob__;
     if (target._isVue || (ob && ob.vmCount)) {
       warn(
-        'Avoid adding reactive properties to a Vue instance or its root $data ' +
-        'at runtime - declare it upfront in the data option.'
-      );
-      return val
+          "Avoid adding reactive properties to a Vue instance or its root $data " +
+            "at runtime - declare it upfront in the data option."
+        );
+      return val;
     }
     if (!ob) {
       target[key] = val;
-      return val
+      return val;
     }
     defineReactive$$1(ob.value, key, val);
     ob.dep.notify();
-    return val
+    return val;
   }
 
   /**
    * Delete a property and trigger change if necessary.
    */
-  function del (target, key) {
-    if (isUndef(target) || isPrimitive(target)
+  function del(target, key) {
+    if (
+      isUndef(target) || isPrimitive(target)
     ) {
-      warn(("Cannot delete reactive property on undefined, null, or primitive value: " + ((target))));
+      warn(
+        ("Cannot delete reactive property on undefined, null, or primitive value: " + ((target)))
+      );
     }
     if (Array.isArray(target) && isValidArrayIndex(key)) {
       target.splice(key, 1);
-      return
+      return;
     }
     var ob = (target).__ob__;
     if (target._isVue || (ob && ob.vmCount)) {
       warn(
-        'Avoid deleting properties on a Vue instance or its root $data ' +
-        '- just set it to null.'
-      );
-      return
+          "Avoid deleting properties on a Vue instance or its root $data " +
+            "- just set it to null."
+        );
+      return;
     }
     if (!hasOwn(target, key)) {
-      return
+      return;
     }
     delete target[key];
     if (!ob) {
-      return
+      return;
     }
     ob.dep.notify();
   }
@@ -1183,7 +1218,7 @@
    * Collect dependencies on array elements when the array is touched, since
    * we cannot intercept array element access like property getters.
    */
-  function dependArray (value) {
+  function dependArray(value) {
     for (var e = (void 0), i = 0, l = value.length; i < l; i++) {
       e = value[i];
       e && e.__ob__ && e.__ob__.dep.depend();
@@ -1763,6 +1798,7 @@
       // make sure to observe it.
       var prevShouldObserve = shouldObserve;
       toggleObserving(true);
+      // 转换成响应式
       observe(value);
       toggleObserving(prevShouldObserve);
     }
@@ -4254,7 +4290,7 @@
         }
       }
     }
-    // 调用生命收齐 beforeMount
+    // 调用生命周期 beforeMount
     callHook(vm, 'beforeMount');
 
     var updateComponent;
@@ -4637,6 +4673,8 @@
    * and fires callback when the expression value changes.
    * This is used for both the $watch() api and directives.
    */
+  // FIXME: ????
+  // 1. 几种 watcher 的优先级 ?
   var Watcher = function Watcher (
     vm,
     expOrFn,
@@ -4645,6 +4683,8 @@
     isRenderWatcher
   ) {
     this.vm = vm;
+    isRenderWatcher && console.log(this.vm,'=====');
+    throw new Error('123')
     if (isRenderWatcher) {
       vm._watcher = this;
     }
@@ -4689,6 +4729,7 @@
   };
 
   /**
+   * 计算 getter, 并重新收集依赖
    * Evaluate the getter, and re-collect dependencies.
    */
   Watcher.prototype.get = function get () {
@@ -4753,14 +4794,19 @@
   /**
    * Subscriber interface.
    * Will be called when a dependency changes.
+   * 订阅者接口
+   * 在依赖改变时会被调用
    */
   Watcher.prototype.update = function update () {
     /* istanbul ignore else */
     if (this.lazy) {
+      // 如果手动设置 lazy
       this.dirty = true;
     } else if (this.sync) {
+      // 在服务端渲染情况下
       this.run();
     } else {
+      // 正常情况下, 就将更新任务入队,缓冲等待 nextTick 调用
       queueWatcher(this);
     }
   };
@@ -5261,7 +5307,7 @@
         mark(endTag);
         measure(("vue " + (vm._name) + " init"), startTag, endTag);
       }
-
+      // 如果提供了el, 调用$mount挂载组件
       if (vm.$options.el) {
         vm.$mount(vm.$options.el);
       }

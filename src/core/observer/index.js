@@ -113,7 +113,7 @@ function copyAugment(target: Object, src: Object, keys: Array<string>) {
  * or the existing observer if the value already has one.
  */
 /**
- * 
+ *
  * @param {*} value 需要被观察者的对象
  * @param {*} asRootData 仅data对象初始化观察者时,该值才为true
  */
@@ -187,6 +187,9 @@ export function defineReactive(
       const value = getter ? getter.call(obj) : val;
       // FIXME: ??? 这句话不是很理解
       // Dep.target 是一个当前处在全局的活跃的 Watcher
+      // get 触发依赖手机
+      // eslint-disable-next-line no-debugger
+      // debugger
       if (Dep.target) {
         dep.depend();
         if (childOb) {

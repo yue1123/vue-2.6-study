@@ -13,11 +13,6 @@
   </head>
   <body>
     <div id="app">
-      <div>{{ name }}</div>
-      <div>{{ age }}</div>
-      <div>{{ name }}</div>
-      <div>{{ name }}</div>
-      <button @click="add">add</button>
       <!--  <com></com>-->
     </div>
 
@@ -33,15 +28,21 @@
         props: {
           na11me: {
             type: Boolean,
-            default: "",
+            default: false,
           },
         },
         propsData: {
-          na11me: "100fasdf",
+          na11me: false,
         },
         data() {
           // debugger
-          return 123231;
+          return {
+            name:14,
+            info:{
+              address: '四川',
+              phone: '135....'
+            }
+          };
         },
         // inject: { a: 1, b: 2 },
         // watch: {
@@ -58,14 +59,11 @@
           },
         },
         beforeCreate() {
-          console.log("mounted");
+          console.log("beforeCreate");
         },
         created() {
-          console.log(123333);
-        },
-        created() {
-          console.log(123333);
-        },
+          // console.log(123333);
+        }
       });
       console.log(vm);
     </script>

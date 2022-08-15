@@ -183,7 +183,7 @@ export function mountComponent (
       }
     }
   }
-  // 调用生命收齐 beforeMount
+  // 调用生命周期 beforeMount
   callHook(vm, 'beforeMount')
 
   let updateComponent

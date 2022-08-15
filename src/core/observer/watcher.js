@@ -24,15 +24,26 @@ let uid = 0
  * and fires callback when the expression value changes.
  * This is used for both the $watch() api and directives.
  */
+// FIXME: ????
+// 1. 几种 watcher 的优先级 ?
 export default class Watcher {
+  // 实例
   vm: Component;
+  // 表达式
   expression: string;
+  // 回调
   cb: Function;
+  // id
   id: number;
+  // 是否深度递归监听
   deep: boolean;
+  //
   user: boolean;
+  // 是否懒更新
   lazy: boolean;
+  // 是否同步
   sync: boolean;
+  //
   dirty: boolean;
   active: boolean;
   deps: Array<Dep>;
@@ -51,6 +62,8 @@ export default class Watcher {
     isRenderWatcher?: boolean
   ) {
     this.vm = vm
+    isRenderWatcher && console.log(this.vm,'=====')
+    throw new Error('123')
     if (isRenderWatcher) {
       vm._watcher = this
     }
@@ -97,6 +110,7 @@ export default class Watcher {
   }
 
   /**
+   * 计算 getter, 并重新收集依赖
    * Evaluate the getter, and re-collect dependencies.
    */
   get () {
@@ -161,14 +175,19 @@ export default class Watcher {
   /**
    * Subscriber interface.
    * Will be called when a dependency changes.
+   * 订阅者接口
+   * 在依赖改变时会被调用
    */
   update () {
     /* istanbul ignore else */
     if (this.lazy) {
+      // 如果手动设置 lazy
       this.dirty = true
     } else if (this.sync) {
+      // 在服务端渲染情况下
       this.run()
     } else {
+      // 正常情况下, 就将更新任务入队,缓冲等待 nextTick 调用
       queueWatcher(this)
     }
   }
