@@ -50,6 +50,7 @@ export default class Watcher {
   newDeps: Array<Dep>;
   depIds: SimpleSet;
   newDepIds: SimpleSet;
+  // 生命周期回调, 会在调用该 watcher 之前调用
   before: ?Function;
   getter: Function;
   value: any;
@@ -62,9 +63,7 @@ export default class Watcher {
     isRenderWatcher?: boolean
   ) {
     this.vm = vm
-    isRenderWatcher && console.log(this.vm,'=====')
-    throw new Error('123')
-    if (isRenderWatcher) {
+    if(isRenderWatcher) {
       vm._watcher = this
     }
     vm._watchers.push(this)
