@@ -104,9 +104,11 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
   // Fallback to setImmediate.
   // Technically it leverages the (macro) task queue,
   // but it is still a better choice than setTimeout.
+  // setImmediate 执行优先级高于 setTimeout
   timerFunc = () => {
     setImmediate(flushCallbacks)
   }
+
 } else {
   // 降级使用 setTimeout
   // Fallback to setTimeout.
