@@ -1,50 +1,60 @@
 /* @flow */
 
-import type Watcher from './watcher'
-import { remove } from '../util/index'
-import config from '../config'
+import type Watcher from "./watcher";
+import { remove } from "../util/index";
+import config from "../config";
 
-let uid = 0
+let uid = 0;
 
 /**
  * A dep is an observable that can have multiple
  * directives subscribing to it.
  */
+// 相当于被观察者, 每一个属性都对应着一个dep
 export default class Dep {
   static target: ?Watcher;
   id: number;
+  // 里面存放的是所有依赖于这个属性的观察者,也就是watcher
+  // 当当前dep(值)变化时,通过notify通知watcher重新计算
+  // 该属性让dep 知道watcher的存在
   subs: Array<Watcher>;
 
-  constructor () {
-    this.id = uid++
-    this.subs = []
+  constructor() {
+    this.id = uid++;
+    this.subs = [];
   }
 
-  addSub (sub: Watcher) {
-    this.subs.push(sub)
+  // 是通过watcher.addDep 添加
+  // 添加一个依赖
+  addSub(sub: Watcher) {
+    this.subs.push(sub);
   }
 
-  removeSub (sub: Watcher) {
-    remove(this.subs, sub)
+  // 移除一个依赖
+  removeSub(sub: Watcher) {
+    remove(this.subs, sub);
   }
 
-  depend () {
+  // 通过Dep.target 调用
+  // 添加依赖
+  depend() {
     if (Dep.target) {
-      Dep.target.addDep(this)
+      Dep.target.addDep(this);
     }
   }
 
-  notify () {
+  // 通过set 方法, 值变化时,调用dep notify 方法,遍历当前dep 所有的watcher,调用watcher的update方法
+  notify() {
     // stabilize the subscriber list first
-    const subs = this.subs.slice()
-    if (process.env.NODE_ENV !== 'production' && !config.async) {
+    const subs = this.subs.slice();
+    if (process.env.NODE_ENV !== "production" && !config.async) {
       // subs aren't sorted in scheduler if not running async
       // we need to sort them now to make sure they fire in correct
       // order
-      subs.sort((a, b) => a.id - b.id)
+      subs.sort((a, b) => a.id - b.id);
     }
     for (let i = 0, l = subs.length; i < l; i++) {
-      subs[i].update()
+      subs[i].update();
     }
   }
 }
@@ -56,17 +66,18 @@ export default class Dep {
 // The current target watcher being evaluated.
 // This is globally unique because only one watcher
 // can be evaluated at a time.
-Dep.target = null
-const targetStack = []
+// target 静态属性
+Dep.target = null;
+const targetStack = [];
 // 往栈里面放一个 Watcher, 仅在 Watcher.prototype.get 方法调用是,该值才不为空,其他时候都是 undefined
-export function pushTarget (target: ?Watcher) {
-  targetStack.push(target)
-  Dep.target = target
-  console.log(target,'Dep.target')
+export function pushTarget(target: ?Watcher) {
+  targetStack.push(target);
+  Dep.target = target;
+  console.log(target, "Dep.target");
 }
 
 // 弹出一个栈尾元素,然后把 stack 的最后一个元素赋给 Dep.target, 恢复上一个,变更前的 Dep.target
-export function popTarget () {
-  targetStack.pop()
-  Dep.target = targetStack[targetStack.length - 1]
+export function popTarget() {
+  targetStack.pop();
+  Dep.target = targetStack[targetStack.length - 1];
 }

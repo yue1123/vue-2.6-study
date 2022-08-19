@@ -13,6 +13,7 @@
   </head>
   <body>
     <div id="app">
+      <div>{{name}}</div>
       <!--  <com></com>-->
     </div>
 
@@ -25,23 +26,23 @@
       // Vue.component(a)
       const vm = new Vue({
         el: "#app",
-        props: {
-          na11me: {
-            type: Boolean,
-            default: false,
-          },
-        },
-        propsData: {
-          na11me: false,
-        },
+        // props: {
+        //   na11me: {
+        //     type: Boolean,
+        //     default: false,
+        //   },
+        // },
+        // propsData: {
+        //   na11me: false,
+        // },
         data() {
           // debugger
           return {
-            name:14,
-            info:{
-              address: '四川',
-              phone: '135....'
-            }
+            name: 14,
+            info: {
+              address: "四川",
+              phone: "135....",
+            },
           };
         },
         // inject: { a: 1, b: 2 },
@@ -53,17 +54,17 @@
         //     deep: true
         //   }
         // },
-        methods: {
-          add() {
-            this.arr.splice(1, 0, "1000");
-          },
-        },
-        beforeCreate() {
-          console.log("beforeCreate");
-        },
-        created() {
-          // console.log(123333);
-        }
+        // methods: {
+        //   add() {
+        //     this.arr.splice(1, 0, "1000");
+        //   },
+        // },
+        // beforeCreate() {
+        //   console.log("beforeCreate");
+        // },
+        // created() {
+        //   // console.log(123333);
+        // }
       });
       console.log(vm);
     </script>

@@ -44,6 +44,7 @@ export class Observer {
     this.dep = new Dep();
     this.vmCount = 0;
     def(value, "__ob__", this);
+    // 如果value值是一个数组
     if (Array.isArray(value)) {
       // 如果 __proto__ 可用,直接将拦截的 Array 方法赋给__proto__
       if (hasProto) {
@@ -113,27 +114,35 @@ function copyAugment(target: Object, src: Object, keys: Array<string>) {
  * or the existing observer if the value already has one.
  */
 /**
- *
+ * 数据响应式入口函数
  * @param {*} value 需要被观察者的对象
  * @param {*} asRootData 仅data对象初始化观察者时,该值才为true
  */
 export function observe(value: any, asRootData: ?boolean): Observer | void {
-  // 如果value 不是一个对象或者是VNode,直接放回
+  // 如果value 不是一个对象或者value是VNode,直接放回
   if (!isObject(value) || value instanceof VNode) {
     return;
   }
   let ob: Observer | void;
+  // 如果已经存在__ob__ 属性,则说明已经是做过处理的,不在处理
   if (hasOwn(value, "__ob__") && value.__ob__ instanceof Observer) {
     ob = value.__ob__;
   } else if (
+    // 应该被观察flag,通过toggleObserving方法控制切换
     shouldObserve &&
+    // 不是在服务端,因为服务端只是将数据初次渲染脱水,数据响应式处理没意义
     !isServerRendering() &&
+    // 如果是数组或者对象
     (Array.isArray(value) || isPlainObject(value)) &&
+    // 检查对象是否可以被添加新的属性
     Object.isExtensible(value) &&
+    // 不是vm(this)对象
     !value._isVue
   ) {
+    // debugger
     ob = new Observer(value);
   }
+  // 如果是data, 并且有ob, 则增加实例数
   if (asRootData && ob) {
     ob.vmCount++;
   }
@@ -178,7 +187,7 @@ export function defineReactive(
   }
 
   // 子属性响应式
-  // 如果不是没有指定浅层响应式,就将子属性也变为响应式
+  // 如果不是没有指定浅层响应式,就尝试将子属性也变为响应式
   let childOb = !shallow && observe(val);
   Object.defineProperty(obj, key, {
     enumerable: true,
@@ -187,7 +196,7 @@ export function defineReactive(
       const value = getter ? getter.call(obj) : val;
       // FIXME: ??? 这句话不是很理解
       // Dep.target 是一个当前处在全局的活跃的 Watcher
-      // get 触发依赖手机
+      // get 触发依赖收集
       // eslint-disable-next-line no-debugger
       // debugger
       if (Dep.target) {

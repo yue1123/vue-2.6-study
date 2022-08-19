@@ -746,25 +746,32 @@
    * A dep is an observable that can have multiple
    * directives subscribing to it.
    */
-  var Dep = function Dep () {
+  // 相当于被观察者, 每一个属性都对应着一个dep
+  var Dep = function Dep() {
     this.id = uid++;
     this.subs = [];
   };
 
+  // 是通过watcher.addDep 添加
+  // 添加一个依赖
   Dep.prototype.addSub = function addSub (sub) {
     this.subs.push(sub);
   };
 
+  // 移除一个依赖
   Dep.prototype.removeSub = function removeSub (sub) {
     remove(this.subs, sub);
   };
 
+  // 通过Dep.target 调用
+  // 添加依赖
   Dep.prototype.depend = function depend () {
     if (Dep.target) {
       Dep.target.addDep(this);
     }
   };
 
+  // 通过set 方法, 值变化时,调用dep notify 方法,遍历当前dep 所有的watcher,调用watcher的update方法
   Dep.prototype.notify = function notify () {
     // stabilize the subscriber list first
     var subs = this.subs.slice();
@@ -786,17 +793,18 @@
   // The current target watcher being evaluated.
   // This is globally unique because only one watcher
   // can be evaluated at a time.
+  // target 静态属性
   Dep.target = null;
   var targetStack = [];
   // 往栈里面放一个 Watcher, 仅在 Watcher.prototype.get 方法调用是,该值才不为空,其他时候都是 undefined
-  function pushTarget (target) {
+  function pushTarget(target) {
     targetStack.push(target);
     Dep.target = target;
-    console.log(target,'Dep.target');
+    console.log(target, "Dep.target");
   }
 
   // 弹出一个栈尾元素,然后把 stack 的最后一个元素赋给 Dep.target, 恢复上一个,变更前的 Dep.target
-  function popTarget () {
+  function popTarget() {
     targetStack.pop();
     Dep.target = targetStack[targetStack.length - 1];
   }
@@ -896,9 +904,11 @@
    * dynamically accessing methods on Array prototype
    */
 
+  // 取到Array的原型,便于创建一个继承于Array属性的对象, 同时也便于取原始方法
   var arrayProto = Array.prototype;
   var arrayMethods = Object.create(arrayProto);
 
+  // 需要拦截的可改变array数据的方法
   var methodsToPatch = [
     'push',
     'pop',
@@ -912,8 +922,11 @@
   /**
    * Intercept mutating methods and emit events
    */
+  // 拦截数组方法
+  // 通过自定义一个函数,在自定义函数中调用原本的方法, 触发更新,从而代替原本的数组方法, 使数组响应式
   methodsToPatch.forEach(function (method) {
     // cache original method
+    // 原本的方法
     var original = arrayProto[method];
     def(arrayMethods, method, function mutator () {
       var args = [], len = arguments.length;
@@ -921,6 +934,7 @@
 
       var result = original.apply(this, args);
       var ob = this.__ob__;
+      // 获取新插入的数据, 变成响应式数据
       var inserted;
       switch (method) {
         case 'push':
@@ -933,7 +947,9 @@
       }
       if (inserted) { ob.observeArray(inserted); }
       // notify change
+      // 响应更新
       ob.dep.notify();
+      // 返回数组原方法调用的返回值
       return result
     });
   });
@@ -963,6 +979,7 @@
     this.dep = new Dep();
     this.vmCount = 0;
     def(value, "__ob__", this);
+    // 如果value值是一个数组
     if (Array.isArray(value)) {
       // 如果 __proto__ 可用,直接将拦截的 Array 方法赋给__proto__
       if (hasProto) {
@@ -1031,27 +1048,35 @@
    * or the existing observer if the value already has one.
    */
   /**
-   *
+   * 数据响应式入口函数
    * @param {*} value 需要被观察者的对象
    * @param {*} asRootData 仅data对象初始化观察者时,该值才为true
    */
   function observe(value, asRootData) {
-    // 如果value 不是一个对象或者是VNode,直接放回
+    // 如果value 不是一个对象或者value是VNode,直接放回
     if (!isObject(value) || value instanceof VNode) {
       return;
     }
     var ob;
+    // 如果已经存在__ob__ 属性,则说明已经是做过处理的,不在处理
     if (hasOwn(value, "__ob__") && value.__ob__ instanceof Observer) {
       ob = value.__ob__;
     } else if (
+      // 应该被观察flag,通过toggleObserving方法控制切换
       shouldObserve &&
+      // 不是在服务端,因为服务端只是将数据初次渲染脱水,数据响应式处理没意义
       !isServerRendering() &&
+      // 如果是数组或者对象
       (Array.isArray(value) || isPlainObject(value)) &&
+      // 检查对象是否可以被添加新的属性
       Object.isExtensible(value) &&
+      // 不是vm(this)对象
       !value._isVue
     ) {
+      // debugger
       ob = new Observer(value);
     }
+    // 如果是data, 并且有ob, 则增加实例数
     if (asRootData && ob) {
       ob.vmCount++;
     }
@@ -1096,7 +1121,7 @@
     }
 
     // 子属性响应式
-    // 如果不是没有指定浅层响应式,就将子属性也变为响应式
+    // 如果不是没有指定浅层响应式,就尝试将子属性也变为响应式
     var childOb = !shallow && observe(val);
     Object.defineProperty(obj, key, {
       enumerable: true,
@@ -1105,7 +1130,7 @@
         var value = getter ? getter.call(obj) : val;
         // FIXME: ??? 这句话不是很理解
         // Dep.target 是一个当前处在全局的活跃的 Watcher
-        // get 触发依赖手机
+        // get 触发依赖收集
         // eslint-disable-next-line no-debugger
         // debugger
         if (Dep.target) {
@@ -2088,15 +2113,22 @@
   }
 
   /*  */
-
+  // 是否使用的是微任务 flag
   var isUsingMicroTask = false;
 
+  // nextTick 中缓冲的所有回调
   var callbacks = [];
+  // 执行 callbacks 任务是否正在进行中
   var pending = false;
 
+  // 清空callbacks
   function flushCallbacks () {
     pending = false;
+    // 先 copy 一份callbacks
     var copies = callbacks.slice(0);
+    // 然后清空 callbacks
+    // >>> 我想应该是避免再执行回调时,回调中包含新的回调,动态的改变了 callbacks, 所以复制一份,
+    // >>> 新进来的回调放到 callbacks中,等待下一次 nextTick 调用
     callbacks.length = 0;
     for (var i = 0; i < copies.length; i++) {
       copies[i]();
@@ -2104,13 +2136,20 @@
   }
 
   // Here we have async deferring wrappers using microtasks.
+  // 2.5 中,使用宏任务结合微任务
   // In 2.5 we used (macro) tasks (in combination with microtasks).
+  // 然而, 在重绘之前更改 state 会出现微妙的问题
   // However, it has subtle problems when state is changed right before repaint
+  // 例如: 问题#6813, out-in transitions
   // (e.g. #6813, out-in transitions).
+  // 此外,在事件处理函数中使用宏任务, 会导致一些奇怪的行为
   // Also, using (macro) tasks in event handler would cause some weird behaviors
+  // 都无法绕过
   // that cannot be circumvented (e.g. #7109, #7153, #7546, #7834, #8109).
+  // 所以我们现在再次在任何地方使用微任务。
+  // 这种权衡的一个主要缺点是，在某些情况下，微任务的优先级太高，并且据称介于两者之间
   // So we now use microtasks everywhere, again.
-  // A major drawback of this tradeoff is that there are some scenarios
+  // A major drawback of this trade off is that there are some scenarios
   // where microtasks have too high a priority and fire in between supposedly
   // sequential events (e.g. #4521, #6690, which have workarounds)
   // or even between bubbling of the same event (#6566).
@@ -2123,10 +2162,17 @@
   // completely stops working after triggering a few times... so, if native
   // Promise is available, we will use it:
   /* istanbul ignore next, $flow-disable-line */
+  // 如果 Promise 不是 undefined 并且是原生提供的 Promise, 就用 Promise.resolve() 微任务调度
   if (typeof Promise !== 'undefined' && isNative(Promise)) {
+    // 创建一个fulfilled Promise
     var p = Promise.resolve();
     timerFunc = function () {
+      // 每次调用 timerFunc, 通过.then 函数生成一个微任务
       p.then(flushCallbacks);
+      // 在有问题的 UIWebViews 中，Promise.then 并没有完全中断，
+      // 但它可能会陷入一种奇怪的状态，即回调被推入微任务队列但队列没有被刷新，
+      // 直到浏览器需要做一些其他工作，例如处理一个计时器。
+      // 因此，我们可以通过添加一个空计时器来“强制”刷新微任务队列。
       // In problematic UIWebViews, Promise.then doesn't completely break, but
       // it can get stuck in a weird state where callbacks are pushed into the
       // microtask queue but the queue isn't being flushed, until the browser
@@ -2136,13 +2182,20 @@
     };
     isUsingMicroTask = true;
   } else if (!isIE && typeof MutationObserver !== 'undefined' && (
+    // 不是 IE 并且有 MutationObserver, 并且是原生的MutationObserver
     isNative(MutationObserver) ||
     // PhantomJS and iOS 7.x
     MutationObserver.toString() === '[object MutationObserverConstructor]'
   )) {
+    // 当原生 Promise 不支持的时候,就是用 MutationObserver
     // Use MutationObserver where native Promise is not available,
     // e.g. PhantomJS, iOS7, Android 4.4
+    // Ie 11 不支持 MutationObserver
     // (#6466 MutationObserver is unreliable in IE11)
+    // MutationObserver 主要用于监听 Dom 节点变化
+    // 而此处通过创建一个文本节点, 然后每次调用 timerFunc 的时候,
+    // 通过变化 counter 交替变化 0/1 来触发 Dom 节点变化引起的
+    // MutationObserver 回调触发, 执行flushCallbacks
     var counter = 1;
     var observer = new MutationObserver(flushCallbacks);
     var textNode = document.createTextNode(String(counter));
@@ -2155,13 +2208,18 @@
     };
     isUsingMicroTask = true;
   } else if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) {
+    // 降级使用 setImmediate
+    // 虽然他也是使用的宏任务队列,但是他任然是比 setTimeout 更好的选择
     // Fallback to setImmediate.
     // Technically it leverages the (macro) task queue,
     // but it is still a better choice than setTimeout.
+    // setImmediate 执行优先级高于 setTimeout
     timerFunc = function () {
       setImmediate(flushCallbacks);
     };
+
   } else {
+    // 降级使用 setTimeout
     // Fallback to setTimeout.
     timerFunc = function () {
       setTimeout(flushCallbacks, 0);
@@ -2169,6 +2227,8 @@
   }
 
   function nextTick (cb, ctx) {
+    // 主要的工作就是, 判断有 callback 没,有就直接放入 callbacks中,
+    // 没有就返回一个 Promise,并且把 Promise 的 resolve函数放到 callbacks中
     var _resolve;
     callbacks.push(function () {
       if (cb) {
@@ -2183,6 +2243,7 @@
     });
     if (!pending) {
       pending = true;
+      // 执行 timerFunc
       timerFunc();
     }
     // $flow-disable-line
@@ -4487,8 +4548,12 @@
 
   var MAX_UPDATE_COUNT = 100;
 
+  // watcher 更新队列
   var queue = [];
+  //
   var activatedChildren = [];
+  // 保存调度器队列中现有的 watcher
+  // FIXME: 思考? 是否可以用 Object.create(null) 来代替 {}, 然后混一个 pr
   var has = {};
   var circular = {};
   var waiting = false;
@@ -4498,8 +4563,12 @@
   /**
    * Reset the scheduler's state.
    */
+  // 重置调度器
   function resetSchedulerState () {
+    // 将queue 和 activatedChildren 数组清空,index重置为 0
+    // TIPS: 设置数组长度为0,可以清空数组
     index = queue.length = activatedChildren.length = 0;
+    // 重置
     has = {};
     {
       circular = {};
@@ -4542,30 +4611,49 @@
    * Flush both queues and run the watchers.
    */
   function flushSchedulerQueue () {
+    // 设置当前刷新调度器时间戳
     currentFlushTimestamp = getNow();
+    // 上锁
     flushing = true;
     var watcher, id;
 
+    // 在刷新之前给队列排序
     // Sort queue before flush.
+    // 这是为了确保:
     // This ensures that:
+    // 1. 组件更新是由父组件到子组件(因为父组件总是在子组件之前被创建,watcher使用的是自增 id,越先创建id越小),所以更新的时候,应该先更新父组件,在更新子组件
     // 1. Components are updated from parent to child. (because parent is always
     //    created before the child)
+    // 2. 组件中用户创建的 watcher是先于组件的 render watcher
     // 2. A component's user watchers are run before its render watcher (because
     //    user watchers are created before the render watcher)
+    // 3. 如果一个组件在父组件 watcher运行期间被销毁了,它的 watchers 应该跳过
     // 3. If a component is destroyed during a parent component's watcher run,
     //    its watchers can be skipped.
+    // 将队列中的 watcher 按从小到大的顺序排序
     queue.sort(function (a, b) { return a.id - b.id; });
 
+    // 不要缓存数组的 length, 因为更多的 watchers 可能被 push 进来,当我们运行队列中观察者时
     // do not cache length because more watchers might be pushed
     // as we run existing watchers
     for (index = 0; index < queue.length; index++) {
       watcher = queue[index];
+      // 如果 watcher 有 before 生命周期回调, 就调用
       if (watcher.before) {
         watcher.before();
       }
       id = watcher.id;
+      // 重置 has map中标识的 watcher id
       has[id] = null;
+      // 调用 watcher.run(), 计算 watcher 的值
       watcher.run();
+      // 在开发环境中,检查并停止循环更新
+      // 如果我们在 watch:{
+      //    name:function(){
+      //      this.name = Math.random()
+      //    }
+      // }
+      // 就会触发循环更新
       // in dev build, check and stop circular updates.
       if (has[id] != null) {
         circular[id] = (circular[id] || 0) + 1;
@@ -4583,14 +4671,19 @@
       }
     }
 
+
+    // copy 副本,便于遍历调用 hooks
     // keep copies of post queues before resetting state
     var activatedQueue = activatedChildren.slice();
     var updatedQueue = queue.slice();
 
     resetSchedulerState();
 
+    // 统一调用hooks
     // call component updated and activated hooks
+    // 重新激活 keep-alive 组件
     callActivatedHooks(activatedQueue);
+    // 调用组件 update 生命周期
     callUpdatedHooks(updatedQueue);
 
     // devtool hook
@@ -4605,6 +4698,7 @@
     while (i--) {
       var watcher = queue[i];
       var vm = watcher.vm;
+      // 如果组件当前的 watcher 和队列 watcher 相同,并且是挂载后的组件,不是已经被销毁的组件,就调用 update hook
       if (vm._watcher === watcher && vm._isMounted && !vm._isDestroyed) {
         callHook(vm, 'updated');
       }
@@ -4615,6 +4709,7 @@
    * Queue a kept-alive component that was activated during patch.
    * The queue will be processed after the entire tree has been patched.
    */
+  // keep-alive 的组件重新激活后, 入队列等待更新调用
   function queueActivatedComponent (vm) {
     // setting _inactive to false here so that a render function can
     // rely on checking whether it's in an inactive tree (e.g. router-view)
@@ -4636,19 +4731,27 @@
    */
   function queueWatcher (watcher) {
     var id = watcher.id;
+    // 如果当前 watcher.id 不存在 watcher map 中
     if (has[id] == null) {
+      // 缓存当前 watcher.id,避免相同的 watcher 再次入队
       has[id] = true;
+      // 如果没有在更新中,就入队
       if (!flushing) {
         queue.push(watcher);
       } else {
+        // 如果正在更新中,就找到队列中小于等于当前 watcher.id 的索引,在后面插入 watcher,便于下次立即运行
         // if already flushing, splice the watcher based on its id
         // if already past its id, it will be run next immediately.
         var i = queue.length - 1;
+        // i > index(当前正在执行的 watcher index): 刷新还没有结束,没有遍历到最后一个
+        // queue[i].id > watcher.id 为了找watcher插入索引位置
         while (i > index && queue[i].id > watcher.id) {
           i--;
         }
         queue.splice(i + 1, 0, watcher);
       }
+      // 缓冲队列更新
+      // 如果当前不是等待更新中,就开启一个缓存队列,等待 nextTick 触发刷新
       // queue the flush
       if (!waiting) {
         waiting = true;
@@ -4673,8 +4776,9 @@
    * and fires callback when the expression value changes.
    * This is used for both the $watch() api and directives.
    */
-  // FIXME: ????
+  // FIXME: watcher 优先级??
   // 1. 几种 watcher 的优先级 ?
+  // 相当于观察者
   var Watcher = function Watcher (
     vm,
     expOrFn,
@@ -4683,9 +4787,7 @@
     isRenderWatcher
   ) {
     this.vm = vm;
-    isRenderWatcher && console.log(this.vm,'=====');
-    throw new Error('123')
-    if (isRenderWatcher) {
+    if(isRenderWatcher) {
       vm._watcher = this;
     }
     vm._watchers.push(this);
@@ -4759,6 +4861,7 @@
   /**
    * Add a dependency to this directive.
    */
+  // 向dep中添加watcher
   Watcher.prototype.addDep = function addDep (dep) {
     var id = dep.id;
     if (!this.newDepIds.has(id)) {

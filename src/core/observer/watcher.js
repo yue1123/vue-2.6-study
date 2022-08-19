@@ -24,8 +24,9 @@ let uid = 0
  * and fires callback when the expression value changes.
  * This is used for both the $watch() api and directives.
  */
-// FIXME: ????
+// FIXME: watcher 优先级??
 // 1. 几种 watcher 的优先级 ?
+// 相当于观察者
 export default class Watcher {
   // 实例
   vm: Component;
@@ -46,6 +47,8 @@ export default class Watcher {
   //
   dirty: boolean;
   active: boolean;
+  // 保存了当前watcher所有的依赖,他们中任意一个值改变,改watcher都会重新计算
+  // 该属性将watcher和dep关联起来,让watcher 知道dep 的存在
   deps: Array<Dep>;
   newDeps: Array<Dep>;
   depIds: SimpleSet;
@@ -139,6 +142,7 @@ export default class Watcher {
   /**
    * Add a dependency to this directive.
    */
+  // 向dep中添加watcher
   addDep (dep: Dep) {
     const id = dep.id
     if (!this.newDepIds.has(id)) {
