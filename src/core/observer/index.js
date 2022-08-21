@@ -119,7 +119,7 @@ function copyAugment(target: Object, src: Object, keys: Array<string>) {
  * @param {*} asRootData 仅data对象初始化观察者时,该值才为true
  */
 export function observe(value: any, asRootData: ?boolean): Observer | void {
-  // 如果value 不是一个对象或者value是VNode,直接放回
+  // 如果value 不是一个对象或者value是VNode,直接返回
   if (!isObject(value) || value instanceof VNode) {
     return;
   }

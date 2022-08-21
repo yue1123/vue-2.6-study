@@ -763,7 +763,7 @@
     remove(this.subs, sub);
   };
 
-  // 通过Dep.target 调用
+  // 通过响应式属性的get调用dep.depend
   // 添加依赖
   Dep.prototype.depend = function depend () {
     if (Dep.target) {
@@ -795,12 +795,13 @@
   // can be evaluated at a time.
   // target 静态属性
   Dep.target = null;
+  console.log(Dep.target, 'Dep.target');
   var targetStack = [];
   // 往栈里面放一个 Watcher, 仅在 Watcher.prototype.get 方法调用是,该值才不为空,其他时候都是 undefined
   function pushTarget(target) {
     targetStack.push(target);
     Dep.target = target;
-    console.log(target, "Dep.target");
+    // console.log(target, "Dep.target");
   }
 
   // 弹出一个栈尾元素,然后把 stack 的最后一个元素赋给 Dep.target, 恢复上一个,变更前的 Dep.target
@@ -1053,7 +1054,7 @@
    * @param {*} asRootData 仅data对象初始化观察者时,该值才为true
    */
   function observe(value, asRootData) {
-    // 如果value 不是一个对象或者value是VNode,直接放回
+    // 如果value 不是一个对象或者value是VNode,直接返回
     if (!isObject(value) || value instanceof VNode) {
       return;
     }
@@ -4922,6 +4923,7 @@
     if (this.active) {
       var value = this.get();
       if (
+        // 如果两次 value 相同
         value !== this.value ||
         // Deep watchers and watchers on Object/Arrays should fire even
         // when the value is the same, because the value may
@@ -5345,6 +5347,7 @@
    */
   function initMixin (Vue) {
     Vue.prototype._init = function (options) {
+      console.log('init==========================');
       // 保存当前vm 实例
       var vm = this;
       // a uid
