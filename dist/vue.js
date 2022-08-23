@@ -986,7 +986,14 @@
       if (hasProto) {
         protoAugment(value, arrayMethods);
       } else {
-        // 不能用__proto__的话,就把拦截的 Array 方法赋给 value 本身
+        // 不能用__proto__的话,就把拦截的 Array 每一个方法赋给 array 本身
+        // [
+        // 0: '1',
+        // 1: '2',
+        // length: 2,
+        // pop: xxx,
+        // push: xxx
+        // ]
         copyAugment(value, arrayMethods, arrayKeys);
       }
       this.observeArray(value);
