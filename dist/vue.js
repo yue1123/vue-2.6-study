@@ -1096,8 +1096,9 @@
   ) {
     // 定义一个 dep 对象,用于记录该属性所对应的watcher
     var dep = new Dep();
-    // 获取对象指定属性的描述配置
+    
     /**
+     * 获取对象指定属性的描述配置
      * {
      *    value: xxx,
      *    writable: true/false,
@@ -1105,6 +1106,7 @@
      *    configurable: true/false
      * }
      */
+    // 获取对象指定属性的描述配置
     var property = Object.getOwnPropertyDescriptor(obj, key);
     // 如果描述配置存在且不可配置,直接返回
     if (property && property.configurable === false) {
@@ -4991,6 +4993,7 @@
     set: noop
   };
 
+  // 代理属性,可直接通过this访问
   function proxy (target, sourceKey, key) {
     sharedPropertyDefinition.get = function proxyGetter () {
       return this[sourceKey][key]
@@ -5100,16 +5103,18 @@
           );
         }
       }
+      // 如果 data 中定义的属性,props 中也有,生产环境给出警告
       if (props && hasOwn(props, key)) {
         warn(
           "The data property \"" + key + "\" is already declared as a prop. " +
           "Use prop default value instead.",
           vm
         );
-      } else if (!isReserved(key)) {
+      } else if (!isReserved(key)) {   // 判断data命名是否规范,非 _和$开头的data属性,才代理
         proxy(vm, "_data", key);
       }
     }
+    // 将data转换成响应式
     // observe data
     observe(data, true /* asRootData */);
   }

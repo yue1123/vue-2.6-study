@@ -36,6 +36,7 @@ const sharedPropertyDefinition = {
   set: noop
 }
 
+// 代理属性,可直接通过this访问
 export function proxy (target: Object, sourceKey: string, key: string) {
   sharedPropertyDefinition.get = function proxyGetter () {
     return this[sourceKey][key]
@@ -102,6 +103,8 @@ function initProps (vm: Component, propsOptions: Object) {
         }
       })
     } else {
+      // console.log(props, key, value);
+      // 将props中的属性定义成响应式的
       defineReactive(props, key, value)
     }
     // static props are already proxied on the component's prototype
@@ -145,16 +148,18 @@ function initData (vm: Component) {
         )
       }
     }
+    // 如果 data 中定义的属性,props 中也有,生产环境给出警告
     if (props && hasOwn(props, key)) {
       process.env.NODE_ENV !== 'production' && warn(
         `The data property "${key}" is already declared as a prop. ` +
         `Use prop default value instead.`,
         vm
       )
-    } else if (!isReserved(key)) {
+    } else if (!isReserved(key)) {   // 判断data命名是否规范,非 _和$开头的data属性,才代理
       proxy(vm, `_data`, key)
     }
   }
+  // 将data转换成响应式
   // observe data
   observe(data, true /* asRootData */)
 }
