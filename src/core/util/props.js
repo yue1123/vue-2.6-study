@@ -17,7 +17,7 @@ type PropOptions = {
   required: ?boolean,
   validator: ?Function
 };
-// 校验 Prop：默认值处理 => 响应式 => Prop 断言(required, 是否符合 type 设定)
+// 校验 Prop：默认值处理 => 响应式 => 生产环境 Prop 断言警告(required, 是否符合 type 设定)
 // https://ustbhuangyi.github.io/vue-analysis/v2/reactive/props.html#%E5%88%9D%E5%A7%8B%E5%8C%96
 export function validateProp (
   key: string,
@@ -80,6 +80,8 @@ export function validateProp (
     const prevShouldObserve = shouldObserve
     toggleObserving(true)
     // 转换成响应式
+    // console.log(value,'props value')
+    // 是有当 value 是对象的时候, 才会将其值转换为响应式
     observe(value)
     toggleObserving(prevShouldObserve)
   }

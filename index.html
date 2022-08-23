@@ -14,6 +14,7 @@
   <body>
     <div id="app">
       <div>{{name}}</div>
+      {{ nickName }}
       <!--  <com></com>-->
     </div>
 
@@ -31,6 +32,10 @@
             type: Boolean,
             default: false,
           },
+          nihao: {
+            type: Object,
+            default: () => ({ info: 100 })
+          }
         },
         data() {
           // debugger
@@ -43,6 +48,12 @@
             arr:[1,2,3,4,5]
           };
         },
+        computed:{
+          nickName(){
+            console.log(this.name)
+            return this.name
+          }
+        }
         // inject: { a: 1, b: 2 },
         // watch: {
         //   name: {

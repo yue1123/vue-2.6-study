@@ -51,13 +51,18 @@ export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options
   // 先初始化 props
+  // 遍历 props ==> 默认值处理 ==> 响应式处理 ==> 生产环境断言警告
   if (opts.props) initProps(vm, opts.props)
+  // 初始化 methods
   if (opts.methods) initMethods(vm, opts.methods)
+  // 初始化 data
   if (opts.data) {
     initData(vm)
   } else {
+    // 如果没有设定 data, 就传入一个空对象, 构成一个空的响应式系统
     observe(vm._data = {}, true /* asRootData */)
   }
+  // computed 基于 watcher 独立存在的,
   if (opts.computed) initComputed(vm, opts.computed)
   if (opts.watch && opts.watch !== nativeWatch) {
     initWatch(vm, opts.watch)
@@ -195,8 +200,11 @@ function initComputed (vm: Component, computed: Object) {
       )
     }
 
+    // 非 ssr 环境, 就创建 watcher
     if (!isSSR) {
       // create internal watcher for the computed property.
+      // computed watcher 是一个独立的想饮食系统,可以看做没有视图的 renderWatcher, computed 属性不参与依赖收集,
+      // 而是被动的更新视图的渲染: 当 computed 属性依赖的属性值,且该属性值参与了视图渲染, 当它改变时会触发
       watchers[key] = new Watcher(
         vm,
         getter || noop,

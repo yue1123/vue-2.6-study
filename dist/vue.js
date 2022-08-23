@@ -1103,7 +1103,7 @@
   ) {
     // 定义一个 dep 对象,用于记录该属性所对应的watcher
     var dep = new Dep();
-    
+
     /**
      * 获取对象指定属性的描述配置
      * {
@@ -1771,7 +1771,7 @@
   /*  */
 
 
-  // 校验 Prop：默认值处理 => 响应式 => Prop 断言(required, 是否符合 type 设定)
+  // 校验 Prop：默认值处理 => 响应式 => 生产环境 Prop 断言警告(required, 是否符合 type 设定)
   // https://ustbhuangyi.github.io/vue-analysis/v2/reactive/props.html#%E5%88%9D%E5%A7%8B%E5%8C%96
   function validateProp (
     key,
@@ -1834,6 +1834,8 @@
       var prevShouldObserve = shouldObserve;
       toggleObserving(true);
       // 转换成响应式
+      // console.log(value,'props value')
+      // 是有当 value 是对象的时候, 才会将其值转换为响应式
       observe(value);
       toggleObserving(prevShouldObserve);
     }
@@ -4642,7 +4644,6 @@
     //    its watchers can be skipped.
     // 将队列中的 watcher 按从小到大的顺序排序
     queue.sort(function (a, b) { return a.id - b.id; });
-
     // 不要缓存数组的 length, 因为更多的 watchers 可能被 push 进来,当我们运行队列中观察者时
     // do not cache length because more watchers might be pushed
     // as we run existing watchers
@@ -4845,6 +4846,7 @@
    * Evaluate the getter, and re-collect dependencies.
    */
   Watcher.prototype.get = function get () {
+    debugger
     pushTarget(this);
     var value;
     var vm = this.vm;
@@ -5015,13 +5017,18 @@
     vm._watchers = [];
     var opts = vm.$options;
     // 先初始化 props
+    // 遍历 props ==> 默认值处理 ==> 响应式处理 ==> 生产环境断言警告
     if (opts.props) { initProps(vm, opts.props); }
+    // 初始化 methods
     if (opts.methods) { initMethods(vm, opts.methods); }
+    // 初始化 data
     if (opts.data) {
       initData(vm);
     } else {
+      // 如果没有设定 data, 就传入一个空对象, 构成一个空的响应式系统
       observe(vm._data = {}, true /* asRootData */);
     }
+    // computed 基于 watcher 独立存在的,
     if (opts.computed) { initComputed(vm, opts.computed); }
     if (opts.watch && opts.watch !== nativeWatch) {
       initWatch(vm, opts.watch);
@@ -5157,8 +5164,11 @@
         );
       }
 
+      // 非 ssr 环境, 就创建 watcher
       if (!isSSR) {
         // create internal watcher for the computed property.
+        // computed watcher 是一个独立的想饮食系统,可以看做没有视图的 renderWatcher, computed 属性不参与依赖收集,
+        // 而是被动的更新视图的渲染: 当 computed 属性依赖的属性值,且该属性值参与了视图渲染, 当它改变时会触发
         watchers[key] = new Watcher(
           vm,
           getter || noop,

@@ -168,7 +168,7 @@ export function defineReactive(
 ) {
   // 定义一个 dep 对象,用于记录该属性所对应的watcher
   const dep = new Dep();
-  
+
   /**
    * 获取对象指定属性的描述配置
    * {

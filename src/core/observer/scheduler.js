@@ -98,7 +98,6 @@ function flushSchedulerQueue () {
   //    its watchers can be skipped.
   // 将队列中的 watcher 按从小到大的顺序排序
   queue.sort((a, b) => a.id - b.id)
-
   // 不要缓存数组的 length, 因为更多的 watchers 可能被 push 进来,当我们运行队列中观察者时
   // do not cache length because more watchers might be pushed
   // as we run existing watchers
