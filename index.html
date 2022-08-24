@@ -13,9 +13,10 @@
   </head>
   <body>
     <div id="app">
-      <div>{{name}}</div>
+      <!-- <div>{{name}}</div> -->
       {{ nickName }}
       <!--  <com></com>-->
+      <button @click="handleUpdateName">更新</button>
     </div>
 
     <script src="./dist/vue.js"></script>
@@ -34,8 +35,8 @@
           },
           nihao: {
             type: Object,
-            default: () => ({ info: 100 })
-          }
+            default: () => ({ info: 100 }),
+          },
         },
         data() {
           // debugger
@@ -45,24 +46,27 @@
               address: "四川",
               phone: "135....",
             },
-            arr:[1,2,3,4,5]
+            arr: [1, 2, 3, 4, 5],
           };
         },
-        computed:{
-          nickName(){
-            console.log(this.name)
-            return this.name
+        computed: {
+          nickName() {
+            console.log(this.name);
+            return this.name;
+          },
+        },
+        methods: {
+          handleUpdateName() {
+            this.name = Math.random();
+          },
+          watchHandler(){
+            console.log('我是watch handler');
           }
-        }
+        },
         // inject: { a: 1, b: 2 },
-        // watch: {
-        //   name: {
-        //     handler(n) {
-        //       console.log(n)
-        //     },
-        //     deep: true
-        //   }
-        // },
+        watch: {
+          name: 'watchHandler'
+        },
         // methods: {
         //   add() {
         //     this.arr.splice(1, 0, "1000");

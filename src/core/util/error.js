@@ -43,6 +43,7 @@ export function invokeWithErrorHandling (
   let res
   try {
     res = args ? handler.apply(context, args) : handler.call(context)
+    // 如果res 是一个promise ,尝试设置错误捕获函数
     if (res && !res._isVue && isPromise(res) && !res._handled) {
       res.catch(e => handleError(e, vm, info + ` (Promise/async)`))
       // issue #9511
@@ -52,6 +53,7 @@ export function invokeWithErrorHandling (
   } catch (e) {
     handleError(e, vm, info)
   }
+  // 调用玩直接返回res
   return res
 }
 

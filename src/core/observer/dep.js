@@ -19,9 +19,10 @@ export default class Dep {
   // 该属性让dep 知道watcher的存在
   subs: Array<Watcher>;
 
-  constructor() {
+  constructor(key: string) {
     this.id = uid++;
     this.subs = [];
+    this.key = key;
   }
 
   // 是通过watcher.addDep 添加
@@ -39,6 +40,7 @@ export default class Dep {
   // 添加依赖
   depend() {
     if (Dep.target) {
+      // console.log(Dep.target, this);
       Dep.target.addDep(this);
     }
   }
@@ -68,7 +70,7 @@ export default class Dep {
 // can be evaluated at a time.
 // target 静态属性
 Dep.target = null;
-console.log(Dep.target, 'Dep.target')
+console.log(Dep.target, "Dep.target");
 const targetStack = [];
 // 往栈里面放一个 Watcher, 仅在 Watcher.prototype.get 方法调用是,该值才不为空,其他时候都是 undefined
 export function pushTarget(target: ?Watcher) {

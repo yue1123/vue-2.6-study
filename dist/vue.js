@@ -747,9 +747,10 @@
    * directives subscribing to it.
    */
   // 相当于被观察者, 每一个属性都对应着一个dep
-  var Dep = function Dep() {
+  var Dep = function Dep(key) {
     this.id = uid++;
     this.subs = [];
+    this.key = key;
   };
 
   // 是通过watcher.addDep 添加
@@ -767,6 +768,7 @@
   // 添加依赖
   Dep.prototype.depend = function depend () {
     if (Dep.target) {
+      // console.log(Dep.target, this);
       Dep.target.addDep(this);
     }
   };
@@ -795,7 +797,7 @@
   // can be evaluated at a time.
   // target 静态属性
   Dep.target = null;
-  console.log(Dep.target, 'Dep.target');
+  console.log(Dep.target, "Dep.target");
   var targetStack = [];
   // 往栈里面放一个 Watcher, 仅在 Watcher.prototype.get 方法调用是,该值才不为空,其他时候都是 undefined
   function pushTarget(target) {
@@ -1102,7 +1104,8 @@
     shallow
   ) {
     // 定义一个 dep 对象,用于记录该属性所对应的watcher
-    var dep = new Dep();
+    // const dep = new Dep();
+    var dep = new Dep(key);
 
     /**
      * 获取对象指定属性的描述配置
@@ -2085,6 +2088,7 @@
     var res;
     try {
       res = args ? handler.apply(context, args) : handler.call(context);
+      // 如果res 是一个promise ,尝试设置错误捕获函数
       if (res && !res._isVue && isPromise(res) && !res._handled) {
         res.catch(function (e) { return handleError(e, vm, info + " (Promise/async)"); });
         // issue #9511
@@ -2094,6 +2098,7 @@
     } catch (e) {
       handleError(e, vm, info);
     }
+    // 调用玩直接返回res
     return res
   }
 
@@ -4790,7 +4795,7 @@
   // FIXME: watcher 优先级??
   // 1. 几种 watcher 的优先级 ?
   // 相当于观察者
-  var Watcher = function Watcher (
+  var Watcher = function Watcher(
     vm,
     expOrFn,
     cb,
@@ -4798,9 +4803,10 @@
     isRenderWatcher
   ) {
     this.vm = vm;
-    if(isRenderWatcher) {
+    if (isRenderWatcher) {
       vm._watcher = this;
     }
+    // 把每个watcher 实例放到_watchers中
     vm._watchers.push(this);
     // options
     if (options) {
@@ -4810,6 +4816,7 @@
       this.sync = !!options.sync;
       this.before = options.before;
     } else {
+      // 没有传options,他们的默认值都是false
       this.deep = this.user = this.lazy = this.sync = false;
     }
     this.cb = cb;
@@ -4820,25 +4827,24 @@
     this.newDeps = [];
     this.depIds = new _Set();
     this.newDepIds = new _Set();
-    this.expression = expOrFn.toString();
+    this.expression =
+      expOrFn.toString();
     // parse expression for getter
-    if (typeof expOrFn === 'function') {
+    if (typeof expOrFn === "function") {
       this.getter = expOrFn;
     } else {
       this.getter = parsePath(expOrFn);
       if (!this.getter) {
         this.getter = noop;
         warn(
-          "Failed watching path: \"" + expOrFn + "\" " +
-          'Watcher only accepts simple dot-delimited paths. ' +
-          'For full control, use a function instead.',
-          vm
-        );
+            "Failed watching path: \"" + expOrFn + "\" " +
+              "Watcher only accepts simple dot-delimited paths. " +
+              "For full control, use a function instead.",
+            vm
+          );
       }
     }
-    this.value = this.lazy
-      ? undefined
-      : this.get();
+    this.value = this.lazy ? undefined : this.get();
   };
 
   /**
@@ -4846,7 +4852,6 @@
    * Evaluate the getter, and re-collect dependencies.
    */
   Watcher.prototype.get = function get () {
-    debugger
     pushTarget(this);
     var value;
     var vm = this.vm;
@@ -4856,7 +4861,7 @@
       if (this.user) {
         handleError(e, vm, ("getter for watcher \"" + (this.expression) + "\""));
       } else {
-        throw e
+        throw e;
       }
     } finally {
       // "touch" every property so they are all tracked as
@@ -4867,7 +4872,7 @@
       popTarget();
       this.cleanupDeps();
     }
-    return value
+    return value;
   };
 
   /**
@@ -4876,6 +4881,16 @@
   // 向dep中添加watcher
   Watcher.prototype.addDep = function addDep (dep) {
     var id = dep.id;
+    console.warn(
+      "🚀 --------------------------------------------------------------------------------🚀"
+    );
+    console.warn(
+      "🚀 ~ file: watcher.js ~ line 148 ~ Watcher ~ addDep ~ this.newDeps",
+      this.newDeps
+    );
+    console.warn(
+      "🚀 --------------------------------------------------------------------------------🚀"
+    );
     if (!this.newDepIds.has(id)) {
       this.newDepIds.add(id);
       this.newDeps.push(dep);
@@ -4915,7 +4930,7 @@
   Watcher.prototype.update = function update () {
     /* istanbul ignore else */
     if (this.lazy) {
-      // 如果手动设置 lazy
+      // 如果手动设置 lazy, lazy 不会自动计算, 需要手动调用evaluate来计算求值
       this.dirty = true;
     } else if (this.sync) {
       // 在服务端渲染情况下
@@ -4943,11 +4958,20 @@
         this.deep
       ) {
         // set new value
+        // 旧值
         var oldValue = this.value;
+        // 新值
         this.value = value;
+        // 如果时用户自定义的watcher, 调用回调时,需要错误捕获
         if (this.user) {
           var info = "callback for watcher \"" + (this.expression) + "\"";
-          invokeWithErrorHandling(this.cb, this.vm, [value, oldValue], this.vm, info);
+          invokeWithErrorHandling(
+            this.cb,
+            this.vm,
+            [value, oldValue],
+            this.vm,
+            info
+          );
         } else {
           this.cb.call(this.vm, value, oldValue);
         }
@@ -4967,14 +4991,17 @@
   /**
    * Depend on all deps collected by this watcher.
    */
+  // 将该实例watcher的所有deps添加到当前活跃的Dep.target中
   Watcher.prototype.depend = function depend () {
     var i = this.deps.length;
     while (i--) {
+      console.log(this.deps[i]);
       this.deps[i].depend();
     }
   };
 
   /**
+   * 从依赖列表中移除该watcher
    * Remove self from all dependencies' subscriber list.
    */
   Watcher.prototype.teardown = function teardown () {
@@ -5150,13 +5177,35 @@
 
   function initComputed (vm, computed) {
     // $flow-disable-line
+    // 创建一个用于保存所有computed watchers的map
     var watchers = vm._computedWatchers = Object.create(null);
     // computed properties are just getters during SSR
+    // 计算属性只是 SSR 期间的 getter
     var isSSR = isServerRendering();
 
+    // 遍历computed
     for (var key in computed) {
+      // 取出每一项
       var userDef = computed[key];
+      // 获取getter
+      // 应为computed 有两种形式
+      /**
+       * 形式一:
+       * nickName(){
+       *    return xxx
+       * }
+       */
+      /**
+       * 形式二
+       * nickName:{
+       *    set(){}
+       *    get(){
+       *        return xxx
+       *    }
+       * }
+       */
       var getter = typeof userDef === 'function' ? userDef : userDef.get;
+      // 如果没有设置getter,或者getter无效,则在生产环境中给出警告
       if (getter == null) {
         warn(
           ("Getter is missing for computed property \"" + key + "\"."),
@@ -5164,15 +5213,16 @@
         );
       }
 
-      // 非 ssr 环境, 就创建 watcher
+      // 
       if (!isSSR) {
         // create internal watcher for the computed property.
-        // computed watcher 是一个独立的想饮食系统,可以看做没有视图的 renderWatcher, computed 属性不参与依赖收集,
-        // 而是被动的更新视图的渲染: 当 computed 属性依赖的属性值,且该属性值参与了视图渲染, 当它改变时会触发
+        // 为每个 computed 属性创建 watcher
         watchers[key] = new Watcher(
           vm,
+          // getter 无效,watcher 求值函数就使用一个空函数
           getter || noop,
           noop,
+          // lazy watcher
           computedWatcherOptions
         );
       }
@@ -5180,9 +5230,11 @@
       // component-defined computed properties are already defined on the
       // component prototype. We only need to define computed properties defined
       // at instantiation here.
+      // 判断key是否在当前实例上,没有才定义
       if (!(key in vm)) {
         defineComputed(vm, key, userDef);
       } else {
+        // 在当前实例上的话, 他就很可能来自data,props,methods中,所以分别判断,给出警告
         if (key in vm.$data) {
           warn(("The computed property \"" + key + "\" is already defined in data."), vm);
         } else if (vm.$options.props && key in vm.$options.props) {
@@ -5199,14 +5251,20 @@
     key,
     userDef
   ) {
+    // 不是在服务端才缓存computed值
     var shouldCache = !isServerRendering();
+    // 如果computed 是函数形式
     if (typeof userDef === 'function') {
       sharedPropertyDefinition.get = shouldCache
+      // 缓存的话就走watcher
         ? createComputedGetter(key)
+        // 不缓存的话就直接调用.每次视图渲染,触发重新调用函数,无异于methods
         : createGetterInvoker(userDef);
       sharedPropertyDefinition.set = noop;
     } else {
-      sharedPropertyDefinition.get = userDef.get
+      // 如果不是函数,尝试使用.get属性, 如果没有设置.get, 则设置一个空函数
+      sharedPropertyDefinition.get = 
+      userDef.get
         ? shouldCache && userDef.cache !== false
           ? createComputedGetter(key)
           : createGetterInvoker(userDef.get)
@@ -5225,16 +5283,46 @@
   }
 
   function createComputedGetter (key) {
+    // 创建一个computed getter,在访问该getter属性时,触发该函数,将其添加到
     return function computedGetter () {
       var watcher = this._computedWatchers && this._computedWatchers[key];
       if (watcher) {
+        // lazy watcher 的作用:
+        // 1. 懒更新
+        // 2. 值缓存
+        // 前面初始化computedWatcher时候, 标识了watcher lazy:true,
+        // 所以watcher更新时,不会自动求值, 只是标识该watcher.dirty 为true
+        // 此时的watcher value已经不是最新值了,当下次访问该属性的时候(例如视图渲染中用到了计算属性), 需要调用watcher.evaluate 来求值更新
+        // 同时也通过该属性实现了计算属性的缓存
+        // watcher.dirty 为true, 求值更新
+
+        // 问题一: computed 是如何收集依赖的
+        // computed 属性 实际上是一个Lazy watcher, 在初始化该watcher 时,是不会自动求值的,只标识watcher.dirty为true.
+        // 只有当视图访问computed 属性时, 才会触发computedGetter函数, 从而触发computed watcher的evaluate求值函数, 该函数调用watcher.get,
+        // 通过pushTarget, 将全局的Dep.target 指向该watcher, 于是,求值过程中,访问到的属性,都会触发get,然后将属性添加到该watcher的deps中,实现依赖收集
+
+        // 问题二: computed 属性的依赖变化,是如何触发视图重新渲染的 ???
+        // computed watcher在计算求值后,就收集了所有该watcher关联的依赖, 同时全局的Dep.target指向renderWatcher,
+        // 这时候调用computedWatcher.depend 方法,将computedWatcher的所有依赖添加到renderWatcher 依赖中, 于是, computedWatcher的依赖变化时(dirty属性也会变成true),
+        // 就会通知视图从新渲染, 视图渲染又会触发computedGetter, 从而触发computedWatcher.evaluate重新求值, 然后渲染到视图中
         if (watcher.dirty) {
           watcher.evaluate();
         }
+        // 如果当前Dep.target 存在的话, 将
         if (Dep.target) {
+          // console.warn("🚀 ------------------------------------------------------------------------🚀")
+          // console.warn("🚀 ~ file: state.js ~ line 309 ~ computedGetter ~ Dep.target", Dep.target)
+          // console.warn("🚀 ------------------------------------------------------------------------🚀")
+          // console.log(Dep.target);
+          // console.log(watcher.deps, 'watcher.deps');
+          // debugger
+          //
           watcher.depend();
         }
-        return watcher.value
+        // console.warn("🚀 ------------------------------------------------------------------------------🚀")
+        // console.warn("🚀 ~ file: state.js ~ line 319 ~ computedGetter ~ watcher.value", watcher.value)
+        // console.warn("🚀 ------------------------------------------------------------------------------🚀")
+        return watcher.value;
       }
     }
   }
@@ -5282,6 +5370,30 @@
   function initWatch (vm, watch) {
     for (var key in watch) {
       var handler = watch[key];
+
+      /**
+       * 常规的
+       * name(){}
+       */
+      /**
+       * 字符串,vm实例上的一个方法名
+       * methods: {
+            watchHandler(){
+              console.log('我是watch handler');
+            }
+          },
+          watch: {
+            name: 'watchHandler'
+          },
+       */
+      /**
+       * watch属性支持数组
+       * name: [
+              function(){},
+              function(){},
+            ]
+       */
+
       if (Array.isArray(handler)) {
         for (var i = 0; i < handler.length; i++) {
           createWatcher(vm, key, handler[i]);
@@ -5298,10 +5410,14 @@
     handler,
     options
   ) {
+    // 如果watch是一个配置对象
     if (isPlainObject(handler)) {
+      // options 就是 options
       options = handler;
+      // 取出handler
       handler = handler.handler;
     }
+    // 如果 handler 是一个string, 因为watch 回调函数可以指定vm实例上的一个方法
     if (typeof handler === 'string') {
       handler = vm[handler];
     }
@@ -5340,21 +5456,28 @@
       options
     ) {
       var vm = this;
+      // 应为可以指定为字符串, 所有很有可能是vm实例上的一个对象,所以要对其进行重新调用createWatcher判断处理,
       if (isPlainObject(cb)) {
-        return createWatcher(vm, expOrFn, cb, options)
+        return createWatcher(vm, expOrFn, cb, options);
       }
       options = options || {};
       options.user = true;
       var watcher = new Watcher(vm, expOrFn, cb, options);
+      // 如果不是立即执行回调函数, 就会等到所监听的值发生改变时,再触发
+      // 如果时立即执行watcher
       if (options.immediate) {
         var info = "callback for immediate watcher \"" + (watcher.expression) + "\"";
         pushTarget();
+        // cb 就是回调函数
+        // vm 就是实例
+        // [watcher.value] 回调函数的参数
         invokeWithErrorHandling(cb, vm, [watcher.value], vm, info);
         popTarget();
       }
-      return function unwatchFn () {
+      // 由用户自己通过$watch创建的监听,提供手动销毁方法
+      return function unwatchFn() {
         watcher.teardown();
-      }
+      };
     };
   }
 
