@@ -222,7 +222,7 @@ function initComputed (vm: Component, computed: Object) {
       )
     }
 
-    // 
+    //
     if (!isSSR) {
       // create internal watcher for the computed property.
       // 为每个 computed 属性创建 watcher
@@ -272,7 +272,7 @@ export function defineComputed (
     sharedPropertyDefinition.set = noop
   } else {
     // 如果不是函数,尝试使用.get属性, 如果没有设置.get, 则设置一个空函数
-    sharedPropertyDefinition.get = 
+    sharedPropertyDefinition.get =
     userDef.get
       ? shouldCache && userDef.cache !== false
         ? createComputedGetter(key)
@@ -472,6 +472,7 @@ export function stateMixin (Vue: Class<Component>) {
     }
     options = options || {};
     options.user = true;
+    console.log(vm, expOrFn, cb, options)
     const watcher = new Watcher(vm, expOrFn, cb, options);
     // 如果不是立即执行回调函数, 就会等到所监听的值发生改变时,再触发
     // 如果时立即执行watcher

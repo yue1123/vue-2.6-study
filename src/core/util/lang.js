@@ -36,6 +36,7 @@ export function parsePath (path: string): any {
     return
   }
   const segments = path.split('.')
+  // 通过一个函数触发 vm 实例上属性的 get 方法,从而实现依赖收集
   return function (obj) {
     for (let i = 0; i < segments.length; i++) {
       if (!obj) return

@@ -545,6 +545,7 @@
       return
     }
     var segments = path.split('.');
+    // 通过一个函数触发 vm 实例上属性的 get 方法,从而实现依赖收集
     return function (obj) {
       for (var i = 0; i < segments.length; i++) {
         if (!obj) { return }
@@ -4845,6 +4846,7 @@
       }
     }
     this.value = this.lazy ? undefined : this.get();
+    console.log(this.value, this.getter, '==================');
   };
 
   /**
@@ -5213,7 +5215,7 @@
         );
       }
 
-      // 
+      //
       if (!isSSR) {
         // create internal watcher for the computed property.
         // 为每个 computed 属性创建 watcher
@@ -5263,7 +5265,7 @@
       sharedPropertyDefinition.set = noop;
     } else {
       // 如果不是函数,尝试使用.get属性, 如果没有设置.get, 则设置一个空函数
-      sharedPropertyDefinition.get = 
+      sharedPropertyDefinition.get =
       userDef.get
         ? shouldCache && userDef.cache !== false
           ? createComputedGetter(key)
@@ -5462,6 +5464,7 @@
       }
       options = options || {};
       options.user = true;
+      console.log(vm, expOrFn, cb, options);
       var watcher = new Watcher(vm, expOrFn, cb, options);
       // 如果不是立即执行回调函数, 就会等到所监听的值发生改变时,再触发
       // 如果时立即执行watcher
