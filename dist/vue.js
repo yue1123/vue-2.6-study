@@ -5059,6 +5059,7 @@
     }
     // computed 基于 watcher 独立存在的,
     if (opts.computed) { initComputed(vm, opts.computed); }
+    // 初始化 watch
     if (opts.watch && opts.watch !== nativeWatch) {
       initWatch(vm, opts.watch);
     }
@@ -5370,32 +5371,11 @@
   }
 
   function initWatch (vm, watch) {
+    // 遍历 watch
     for (var key in watch) {
+      // 取到回调函数
       var handler = watch[key];
-
-      /**
-       * 常规的
-       * name(){}
-       */
-      /**
-       * 字符串,vm实例上的一个方法名
-       * methods: {
-            watchHandler(){
-              console.log('我是watch handler');
-            }
-          },
-          watch: {
-            name: 'watchHandler'
-          },
-       */
-      /**
-       * watch属性支持数组
-       * name: [
-              function(){},
-              function(){},
-            ]
-       */
-
+      // 如果 handler 是一个数组, 指定了多个回调, 就遍历每一个回调, 创建 watcher
       if (Array.isArray(handler)) {
         for (var i = 0; i < handler.length; i++) {
           createWatcher(vm, key, handler[i]);
@@ -5407,11 +5387,35 @@
   }
 
   function createWatcher (
+    // vm 实例
     vm,
+    // 属性 path
     expOrFn,
+    // 回调函数
     handler,
+    // { user: true }
     options
   ) {
+    // 应为 watcher 支持三种写法，所以这里要分别判断处理
+    /**
+     * 常规的
+     * name(){}
+     */
+    /**
+     * 字符串,vm实例上的一个方法名
+     * methods: {
+          watchHandler(){
+            console.log('我是watch handler');
+          }
+        },
+        watch: {
+          name: 'watchHandler'
+        },
+     */
+    /**
+     * watch属性支持数组
+     * name: [ function(){}, function(){} ]
+     */
     // 如果watch是一个配置对象
     if (isPlainObject(handler)) {
       // options 就是 options
@@ -5423,6 +5427,7 @@
     if (typeof handler === 'string') {
       handler = vm[handler];
     }
+    // 调用 vm.$watch , 此方法是通过stateMixin添加到实例中,因为用户可以直接通过vm.$watch来监听某个属性
     return vm.$watch(expOrFn, handler, options)
   }
 
@@ -5464,7 +5469,10 @@
       }
       options = options || {};
       options.user = true;
-      console.log(vm, expOrFn, cb, options);
+      // 这里的 expOrFn 就是 watch 的属性名字符串，进入 new Watcher 逻辑后，
+      // 会对该字符串解析，调用 parsePath，解析成一个循环读取 vm 实例属性的方法，
+      // 在下一步 get 调用时，将 Dep.target 指向该 watcher，然后执行该方法，触发 vm实例上属性的 get
+      // 从而实现依赖收集
       var watcher = new Watcher(vm, expOrFn, cb, options);
       // 如果不是立即执行回调函数, 就会等到所监听的值发生改变时,再触发
       // 如果时立即执行watcher
