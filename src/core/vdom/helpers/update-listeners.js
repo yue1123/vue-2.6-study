@@ -87,7 +87,7 @@ export function updateListeners (
       on[name] = old
     }
   }
-  // 遍历一遍老的时间监听,如果没有出现在新的中,就移除
+  // 遍历一遍老的事件监听,如果没有出现在新的中,就移除
   for (name in oldOn) {
     if (isUndef(on[name])) {
       event = normalizeEvent(name)
