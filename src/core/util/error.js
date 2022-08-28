@@ -53,7 +53,7 @@ export function invokeWithErrorHandling (
   } catch (e) {
     handleError(e, vm, info)
   }
-  // 调用玩直接返回res
+  // 调用完直接返回res
   return res
 }
 

@@ -5087,6 +5087,7 @@
       var res = {};
       var fnGenErrors = [];
       res.render = createFunction(compiled.render, fnGenErrors);
+      console.log(res.render)
       res.staticRenderFns = compiled.staticRenderFns.map(function (code) {
         return createFunction(code, fnGenErrors)
       });

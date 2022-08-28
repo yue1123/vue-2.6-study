@@ -60,6 +60,7 @@ export function initLifecycle (vm: Component) {
 export function lifecycleMixin (Vue: Class<Component>) {
   // update 方法
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
+    console.log(vnode, '========vnode============')
     const vm: Component = this
     const prevEl = vm.$el
     const prevVnode = vm._vnode
@@ -358,7 +359,7 @@ export function deactivateChildComponent (vm: Component, direct?: boolean) {
 
 export function callHook (vm: Component, hook: string) {
   // #7573 disable dep collection when invoking lifecycle hooks
-  console.log(hook)
+  // console.log(hook)
   pushTarget()
   // 取出组件 options 中,指定的 hook function
   // debugger

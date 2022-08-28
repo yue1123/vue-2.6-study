@@ -2099,7 +2099,7 @@
     } catch (e) {
       handleError(e, vm, info);
     }
-    // 调用玩直接返回res
+    // 调用完直接返回res
     return res
   }
 
@@ -2493,7 +2493,7 @@
         on[name] = old;
       }
     }
-    // 遍历一遍老的时间监听,如果没有出现在新的中,就移除
+    // 遍历一遍老的事件监听,如果没有出现在新的中,就移除
     for (name in oldOn) {
       if (isUndef(on[name])) {
         event = normalizeEvent(name);
@@ -4246,6 +4246,7 @@
   function lifecycleMixin (Vue) {
     // update 方法
     Vue.prototype._update = function (vnode, hydrating) {
+      console.log(vnode, '========vnode============');
       var vm = this;
       var prevEl = vm.$el;
       var prevVnode = vm._vnode;
@@ -4544,7 +4545,7 @@
 
   function callHook (vm, hook) {
     // #7573 disable dep collection when invoking lifecycle hooks
-    console.log(hook);
+    // console.log(hook)
     pushTarget();
     // 取出组件 options 中,指定的 hook function
     // debugger
@@ -12299,7 +12300,7 @@
 
       // compile
       var compiled = compile(template, options);
-
+      console.log(compiled, 'template compiled res');
       // check compilation errors/tips
       {
         if (compiled.errors && compiled.errors.length) {
@@ -12332,6 +12333,7 @@
       var res = {};
       var fnGenErrors = [];
       res.render = createFunction(compiled.render, fnGenErrors);
+      console.log(res.render, 'render function');
       res.staticRenderFns = compiled.staticRenderFns.map(function (code) {
         return createFunction(code, fnGenErrors)
       });

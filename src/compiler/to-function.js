@@ -58,7 +58,7 @@ export function createCompileToFunctionFn (compile: Function): Function {
 
     // compile
     const compiled = compile(template, options)
-
+    console.log(compiled, 'template compiled res')
     // check compilation errors/tips
     if (process.env.NODE_ENV !== 'production') {
       if (compiled.errors && compiled.errors.length) {
@@ -91,6 +91,7 @@ export function createCompileToFunctionFn (compile: Function): Function {
     const res = {}
     const fnGenErrors = []
     res.render = createFunction(compiled.render, fnGenErrors)
+    console.log(res.render, 'render function')
     res.staticRenderFns = compiled.staticRenderFns.map(code => {
       return createFunction(code, fnGenErrors)
     })
