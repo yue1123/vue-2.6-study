@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <body>
+    <div id="app"></div>
+    <script>
+      let depData = {};
+      let activeWatcher = null;
+      let watcherId = 0;
+      class Watcher {
+        constructor(cb) {
+          this.id = watcherId++;
+          this.cb = cb;
+          this.get();
+        }
+        get() {
+          activeWatcher = this;
+          this.cb.call(null);
+          activeWatcher = null;
+        }
+        depend() {}
+        update() {
+          this.get();
+        }
+      }
+
+      class Dep {
+        constructor() {
+          this.subs = [];
+        }
+        addSubs() {
+          this.subs.push(activeWatcher);
+        }
+        notify() {
+          this.subs.forEach((watcher) => {
+            this.subs.length = 0
+            console.log(this.subs);
+            watcher.update()
+            console.log(this.subs);
+          });
+        }
+      }
+
+      function defineReactive(target, key, value) {
+        const dep = new Dep();
+        Object.defineProperty(target, key, {
+          enumerable: true,
+          configurable: true,
+          set(newValue) {
+            value = newValue;
+            dep.notify();
+          },
+          get() {
+            if (activeWatcher) {
+              dep.addSubs(activeWatcher);
+            }
+            return value;
+          },
+        });
+      }
+      // 定义两个属性
+      defineReactive(depData, "name", "张三");
+      defineReactive(depData, "age", 18);
+      function renderWatcher() {
+        console.log("render value name is", depData.name);
+        // console.log("render value age is", depData.age);
+      }
+
+      function renderWatcher1() {
+        console.log("render1 value name is", depData.name);
+        console.log("render1 value age is", depData.age);
+      }
+
+      new Watcher(renderWatcher);
+      new Watcher(renderWatcher1);
+    </script>
+  </body>
+</html>
