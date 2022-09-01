@@ -19,16 +19,20 @@
       let watcherId = 0;
       class Watcher {
         constructor(cb) {
-          this.id = watcherId++;
+          // 为了保证唯一性，通过 uid 来区别不同的 Watcher
+          this.uid = watcherId++;
+          // 更新函数
           this.cb = cb;
+          // 保存 Wacher 订阅的所有数据
+          this.deps = [];
+          // 初始化时执行更新函数
           this.get();
         }
+        // 求值函数
         get() {
-          activeWatcher = this;
-          this.cb.call(null);
-          activeWatcher = null;
+          this.cb();
         }
-        depend() {}
+        // 数据更新时，调用该函数重新求值
         update() {
           this.get();
         }
