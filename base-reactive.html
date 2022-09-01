@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Title</title>
+  </head>
+  <body>
+    <script>
+      let data = {};
+      // 使用一个中间变量保存 value
+      let value = "hello";
+      // 用一个集合保存渲染函数
+      let renderSet = new Set();
+      // 在 data 上定义 text 属性
+      Object.defineProperty(data, "text", {
+        enumerable: true,
+        configurable: true,
+        set(newValue) {
+          value = newValue;
+          renderSet.forEach((render) => render());
+        },
+        get() {
+          renderSet.add(render);
+          return value;
+        },
+      });
+
+      // 将 data.text 渲染到页面上
+      function render() {
+        document.body.innerText = data.text;
+      }
+      // 执行渲染函数，触发读取 get
+      render();
+
+      // 一秒后改变数据，触发 set 更新
+      setTimeout(() => {
+        data.text = "world";
+      }, 1000);
+
+      
+    </script>
+  </body>
+</html>

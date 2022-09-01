@@ -10,7 +10,11 @@
   <body>
     <div id="app"></div>
     <script>
-      let depData = {};
+      let depData = {
+        name: "张三",
+        age: 18,
+        address: "成都",
+      };
       let activeWatcher = null;
       let watcherId = 0;
       class Watcher {
@@ -39,9 +43,9 @@
         }
         notify() {
           this.subs.forEach((watcher) => {
-            this.subs.length = 0
+            this.subs.length = 0;
             console.log(this.subs);
-            watcher.update()
+            watcher.update();
             console.log(this.subs);
           });
         }
@@ -76,9 +80,22 @@
         console.log("render1 value name is", depData.name);
         console.log("render1 value age is", depData.age);
       }
-
+      class Observer {
+        constructor(value) {
+          this.value = value;
+        }
+        walk(value) {
+          const keys = Object.keys(obj);
+          for (let i = 0; i < keys.length; i++) {
+            defineReactive(obj, keys[i], value[key[i]]);
+          }
+        }
+      }
+      new Observer(depData)
       new Watcher(renderWatcher);
       new Watcher(renderWatcher1);
+
+      
     </script>
   </body>
 </html>

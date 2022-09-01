@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      // Watcher 观察者可能有 n 个，我们为了区分它们，保证唯一性，增加一个 uid
+      let watcherId = 0;
+      // 当前活跃的 Watcher
+      let activeWatcher = null;
+
+      class Watcher {
+        constructor(cb) {
+          this.uid = watcherId++;
+          // 更新函数
+          this.cb = cb;
+          // 初始化时执行更新函数
+          this.get();
+        }
+        // 求值函数
+        get() {
+          // 调用更新函数时，将 activeWatcher 指向当前 watcher
+          activeWatcher = this;
+          this.cb();
+          // 调用完重置
+          activeWatcher = null;
+        }
+        // 数据更新时，调用该函数重新求值
+        update() {
+          this.get();
+        }
+      }
+
+      class Dep {
+        constructor() {
+          // 保存所有该依赖项的订阅者
+          this.subs = [];
+        }
+        addSubs() {
+          // 将 activeWatcher 作为订阅者，放到 subs 中
+          // 防止重复订阅
+          if(this.subs.indexOf(activeWatcher) === -1){
+            this.subs.push(activeWatcher);
+          }
+        }
+        notify() {
+          // 先保存旧的依赖,便于下面遍历通知更新
+          const deps = this.subs.slice();
+          // 每次更新前，清除上一次收集的依赖，下次执行时，重新收集
+          this.subs.length = 0;
+          deps.forEach((watcher) => {
+            watcher.update();
+          });
+        }
+      }
+
+      class Observer {
+        constructor(value) {
+          this.value = value;
+          this.walk(value);
+        }
+        // 遍历 keys，转换为 getter/setter
+        walk(obj) {
+          const keys = Object.keys(obj);
+          for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            defineReactive(obj, key, obj[key]);
+          }
+        }
+      }
+
+      function defineReactive(target, key, value) {
+        // 每一个数据都是一个被观察者
+        const dep = new Dep();
+        window.deps = window.deps || []
+        window.deps.push(dep) 
+        Object.defineProperty(target, key, {
+          enumerable: true,
+          configurable: true,
+          // 执行 data.xxx 时 get 触发，进行依赖收集，watcher 订阅 dep
+          get() {
+            if (activeWatcher) {
+              dep.addSubs(activeWatcher);
+            }
+            return value;
+          },
+          // 执行 data.xxx = xxx 时 set 触发，遍历订阅了该 dep 的 watchers，
+          // 调用 watcher.updata 更新
+          set(newValue) {
+            value = newValue;
+            // 通知更新
+            dep.notify();
+          },
+        });
+      }
+
+      let data = {
+        name: "张三",
+        age: 18,
+        address: "成都",
+      };
+      // 模拟 render
+      const render1 = () => {
+        console.warn("-------------watcher1--------------");
+        console.log("The name value is", data.name);
+        console.log("The age value is", data.age);
+        console.log("The address value is", data.address);
+      };
+      const render2 = () => {
+        console.warn("-------------watcher2--------------");
+        console.log("The name value is", data.name);
+        console.log("The age value is", data.age);
+      };
+      // 先将 data 转换成响应式
+      new Observer(data);
+      setTimeout(() => {
+        // 实例观察者
+        new Watcher(render1);
+        new Watcher(render2);
+      }, 1000);
+    </script>
+  </body>
+</html>
