@@ -43,7 +43,7 @@
         addSubs() {
           // 将 activeWatcher 作为订阅者，放到 subs 中
           // 防止重复订阅
-          if(this.subs.indexOf(activeWatcher) === -1){
+          if (this.subs.indexOf(activeWatcher) === -1) {
             this.subs.push(activeWatcher);
           }
         }
@@ -76,8 +76,8 @@
       function defineReactive(target, key, value) {
         // 每一个数据都是一个被观察者
         const dep = new Dep();
-        window.deps = window.deps || []
-        window.deps.push(dep) 
+        window.deps = window.deps || [];
+        window.deps.push(dep);
         Object.defineProperty(target, key, {
           enumerable: true,
           configurable: true,
@@ -91,6 +91,10 @@
           // 执行 data.xxx = xxx 时 set 触发，遍历订阅了该 dep 的 watchers，
           // 调用 watcher.updata 更新
           set(newValue) {
+            // 前后值相等，没必要跟新
+            if (value === newVal) {
+              return;
+            }
             value = newValue;
             // 通知更新
             dep.notify();
