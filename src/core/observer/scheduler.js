@@ -19,7 +19,6 @@ const queue: Array<Watcher> = []
 //
 const activatedChildren: Array<Component> = []
 // 保存调度器队列中现有的 watcher
-// FIXME: 思考? 是否可以用 Object.create(null) 来代替 {}, 然后混一个 pr
 let has: { [key: number]: ?true } = {}
 let circular: { [key: number]: number } = {}
 let waiting = false
@@ -91,6 +90,7 @@ function flushSchedulerQueue () {
   // 1. Components are updated from parent to child. (because parent is always
   //    created before the child)
   // 2. 组件中用户创建的 watcher是先于组件的 render watcher
+  //     init 时,先初始化用户的 watcher 和 computed, 最后初始化的 renderWatcher
   // 2. A component's user watchers are run before its render watcher (because
   //    user watchers are created before the render watcher)
   // 3. 如果一个组件在父组件 watcher运行期间被销毁了,它的 watchers 应该跳过
@@ -112,6 +112,7 @@ function flushSchedulerQueue () {
     has[id] = null
     // 调用 watcher.run(), 计算 watcher 的值
     watcher.run()
+    // flush 过程中,队列是可能会新增,如果新增时判断到已经更新过一次了,记录数就+1,超过 100 次,就被视为循环更新
     // 在开发环境中,检查并停止循环更新
     // 如果我们在 watch:{
     //    name:function(){

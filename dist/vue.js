@@ -1,6 +1,6 @@
 /*!
  * Vue.js v2.6.14
- * (c) 2014-2022 Evan You
+ * (c) 2014-2023 Evan You
  * Released under the MIT License.
  */
 (function (global, factory) {
@@ -979,11 +979,14 @@
    * collect dependencies and dispatch updates.
    */
   var Observer = function Observer(value) {
+    // 记录当前值
     this.value = value;
     this.dep = new Dep();
     this.vmCount = 0;
     def(value, "__ob__", this);
     // 如果value值是一个数组
+    // TIPS:
+    // Vue 中只会对数组中非原始数组代理,原始值不做处理
     if (Array.isArray(value)) {
       // 如果 __proto__ 可用,直接将拦截的 Array 方法赋给__proto__
       if (hasProto) {
@@ -1065,6 +1068,7 @@
    */
   function observe(value, asRootData) {
     // 如果value 不是一个对象或者value是VNode,直接返回
+    // 只代理对象
     if (!isObject(value) || value instanceof VNode) {
       return;
     }
@@ -1080,6 +1084,7 @@
       // 如果是数组或者对象
       (Array.isArray(value) || isPlainObject(value)) &&
       // 检查对象是否可以被添加新的属性
+      // 例如 通过 Object.freeze() 冻结的对象就不会转换为响应式
       Object.isExtensible(value) &&
       // 不是vm(this)对象
       !value._isVue
@@ -1129,7 +1134,7 @@
     var getter = property && property.get;
     // 属性已有的 set
     var setter = property && property.set;
-    // FIXME: ??? 这句话不是很理解
+    // 如果没有 getter 只有 setter, 且只传入了 obj和key, 没有提供 val,就从 obj 中取key的值
     if ((!getter || setter) && arguments.length === 2) {
       val = obj[key];
     }
@@ -1142,15 +1147,20 @@
       configurable: true,
       get: function reactiveGetter() {
         var value = getter ? getter.call(obj) : val;
-        // FIXME: ??? 这句话不是很理解
+        // console.log(value,key,childOb)
         // Dep.target 是一个当前处在全局的活跃的 Watcher
         // get 触发依赖收集
         // eslint-disable-next-line no-debugger
         // debugger
+        console.log('key',key,'===============');
         if (Dep.target) {
+          console.log(Dep.target, dep,'收集的 dep');
           dep.depend();
+          // 如果 value 是对象/数组, 也需要把 value 对应的 ob 添加为当前 Dep.target 的依赖, 当用户调用$set时,直接取到 childOb 的 dep, 调用 dep.notify 进行视图更新
+          // 因为子属性任意一个更改,都应该更新视图
           if (childOb) {
             childOb.dep.depend();
+            // 如果是数组,还需要将数组里面非原始值递归的添加依赖
             if (Array.isArray(value)) {
               dependArray(value);
             }
@@ -1161,6 +1171,8 @@
       set: function reactiveSetter(newVal) {
         var value = getter ? getter.call(obj) : val;
         /* eslint-disable no-self-compare */
+        // 如果两个值相等, 或者值为 NAN, 直接返回
+        // NaN === NaN  ===> false
         if (newVal === value || (newVal !== newVal && value !== value)) {
           return;
         }
@@ -1169,13 +1181,16 @@
           customSetter();
         }
         // #7981: for accessor properties without setter
+        // 如果没有setter,只有 getter, 直接返回
         if (getter && !setter) { return; }
         if (setter) {
           setter.call(obj, newVal);
         } else {
           val = newVal;
         }
+        // 如果设置的值是对象或者数组,还需要更新响应式数据,更新 childOb
         childOb = !shallow && observe(newVal);
+        // 触发更新
         dep.notify();
       },
     });
@@ -1194,16 +1209,22 @@
         ("Cannot set reactive property on undefined, null, or primitive value: " + ((target)))
       );
     }
+    // 如果是一个数组,并且传入的 key 有效,设置后会触发数组重谢方法,进行更新
     if (Array.isArray(target) && isValidArrayIndex(key)) {
+      // 直接给一个数组设置长度, 如果大于数组当前长度,会扩充数组,并填充 empty item,如果小于数组当前长度,会从给定的长度处进行截取
       target.length = Math.max(target.length, key);
+      // 再给指定的 index 插入元素
+      // splice 是被重写了的 splice 方法,会触发更新
       target.splice(key, 1, val);
       return val;
     }
+    // 如果 key 已经存在在 target 中,则直接  set会触发属性的响应式 set 方法
     if (key in target && !(key in Object.prototype)) {
       target[key] = val;
       return val;
     }
     var ob = (target).__ob__;
+    // 如果 target 是当前实例(this) 或者 通过 this.$data 和 this._data 添加属性,是不允许的行为
     if (target._isVue || (ob && ob.vmCount)) {
       warn(
           "Avoid adding reactive properties to a Vue instance or its root $data " +
@@ -1211,16 +1232,20 @@
         );
       return val;
     }
+    // 如果没有 ob, 说明不是一个响应式属性,直接修改,无需更新
     if (!ob) {
       target[key] = val;
       return val;
     }
+    // 如果有 ob,说明是响应式属性,通过defineReactive,想已有的 data中添加一个属性
     defineReactive$$1(ob.value, key, val);
+    // 更新
     ob.dep.notify();
     return val;
   }
 
   /**
+   * 删除一个属性并触发更新
    * Delete a property and trigger change if necessary.
    */
   function del(target, key) {
@@ -1254,10 +1279,12 @@
   }
 
   /**
+   *
    * Collect dependencies on array elements when the array is touched, since
    * we cannot intercept array element access like property getters.
    */
   function dependArray(value) {
+    console.log('dependArray',value);
     for (var e = (void 0), i = 0, l = value.length; i < l; i++) {
       e = value[i];
       e && e.__ob__ && e.__ob__.dep.depend();
@@ -4572,7 +4599,6 @@
   //
   var activatedChildren = [];
   // 保存调度器队列中现有的 watcher
-  // FIXME: 思考? 是否可以用 Object.create(null) 来代替 {}, 然后混一个 pr
   var has = {};
   var circular = {};
   var waiting = false;
@@ -4644,6 +4670,7 @@
     // 1. Components are updated from parent to child. (because parent is always
     //    created before the child)
     // 2. 组件中用户创建的 watcher是先于组件的 render watcher
+    //     init 时,先初始化用户的 watcher 和 computed, 最后初始化的 renderWatcher
     // 2. A component's user watchers are run before its render watcher (because
     //    user watchers are created before the render watcher)
     // 3. 如果一个组件在父组件 watcher运行期间被销毁了,它的 watchers 应该跳过
@@ -4665,6 +4692,7 @@
       has[id] = null;
       // 调用 watcher.run(), 计算 watcher 的值
       watcher.run();
+      // flush 过程中,队列是可能会新增,如果新增时判断到已经更新过一次了,记录数就+1,超过 100 次,就被视为循环更新
       // 在开发环境中,检查并停止循环更新
       // 如果我们在 watch:{
       //    name:function(){
@@ -4794,8 +4822,10 @@
    * and fires callback when the expression value changes.
    * This is used for both the $watch() api and directives.
    */
-  // FIXME: watcher 优先级??
-  // 1. 几种 watcher 的优先级 ?
+  // 几种 watcher 初始化的优先级 ?
+  // 1. user watcher
+  // 2. computed watcher
+  // 3. render watcher
   // 相当于观察者
   var Watcher = function Watcher(
     vm,
@@ -4836,6 +4866,7 @@
       this.getter = expOrFn;
     } else {
       this.getter = parsePath(expOrFn);
+      console.log(this.getter);
       if (!this.getter) {
         this.getter = noop;
         warn(
@@ -4847,7 +4878,7 @@
       }
     }
     this.value = this.lazy ? undefined : this.get();
-    console.log(this.value, this.getter, '==================');
+    // console.log(this.value, this.getter, '==================')
   };
 
   /**
@@ -4883,6 +4914,7 @@
    */
   // 向dep中添加watcher
   Watcher.prototype.addDep = function addDep (dep) {
+    console.log(dep);
     var id = dep.id;
     console.warn(
       "🚀 --------------------------------------------------------------------------------🚀"
@@ -4998,7 +5030,7 @@
   Watcher.prototype.depend = function depend () {
     var i = this.deps.length;
     while (i--) {
-      console.log(this.deps[i]);
+      // console.log(this.deps[i]);
       this.deps[i].depend();
     }
   };
@@ -5166,6 +5198,7 @@
 
   function getData (data, vm) {
     // #7573 disable dep collection when invoking data getters
+    // pushTarget undefined 来禁止 deep collection
     pushTarget();
     try {
       return data.call(vm, vm)
@@ -5179,6 +5212,7 @@
 
   var computedWatcherOptions = { lazy: true };
 
+  // 初始化 computed 入口函数
   function initComputed (vm, computed) {
     // $flow-disable-line
     // 创建一个用于保存所有computed watchers的map
@@ -5225,7 +5259,9 @@
           vm,
           // getter 无效,watcher 求值函数就使用一个空函数
           getter || noop,
+          // callback
           noop,
+          // { lazy: true }
           // lazy watcher
           computedWatcherOptions
         );
@@ -5236,7 +5272,7 @@
       // at instantiation here.
       // 判断key是否在当前实例上,没有才定义
       if (!(key in vm)) {
-        defineComputed(vm, key, userDef);
+        defineComputed(/* target */vm, /* computed prototype key */key, /* computed function */userDef);
       } else {
         // 在当前实例上的话, 他就很可能来自data,props,methods中,所以分别判断,给出警告
         if (key in vm.$data) {
@@ -5262,7 +5298,7 @@
       sharedPropertyDefinition.get = shouldCache
       // 缓存的话就走watcher
         ? createComputedGetter(key)
-        // 不缓存的话就直接调用.每次视图渲染,触发重新调用函数,无异于methods
+        // 不缓存的话就直接调用.每次取值触发 get 就调用函数,无异于methods
         : createGetterInvoker(userDef);
       sharedPropertyDefinition.set = noop;
     } else {
@@ -5305,22 +5341,24 @@
         // 只有当视图访问computed 属性时, 才会触发computedGetter函数, 从而触发computed watcher的evaluate求值函数, 该函数调用watcher.get,
         // 通过pushTarget, 将全局的Dep.target 指向该watcher, 于是,求值过程中,访问到的属性,都会触发get,然后将属性添加到该watcher的deps中,实现依赖收集
 
+        // 大概步骤:
+        // init
+        // ==> watcher(未求值的 watcher,dirty)
+        // ===> 视图渲染用到 computed 的
+        // ===> 如果该 watcher 是dirty的,就会求值,全局的Dep.target 指向该 watcher
+        // ===> computed function 执行,触发get
+        // ===> 依赖收集完毕
+
         // 问题二: computed 属性的依赖变化,是如何触发视图重新渲染的 ???
         // computed watcher在计算求值后,就收集了所有该watcher关联的依赖, 同时全局的Dep.target指向renderWatcher,
-        // 这时候调用computedWatcher.depend 方法,将computedWatcher的所有依赖添加到renderWatcher 依赖中, 于是, computedWatcher的依赖变化时(dirty属性也会变成true),
+        // 这时候调用computedWatcher.depend 方法,将computedWatcher的所有依赖添加到 renderWatcher 依赖中, 于是, computedWatcher的依赖变化时(dirty属性也会变成true),
         // 就会通知视图从新渲染, 视图渲染又会触发computedGetter, 从而触发computedWatcher.evaluate重新求值, 然后渲染到视图中
+
         if (watcher.dirty) {
           watcher.evaluate();
         }
-        // 如果当前Dep.target 存在的话, 将
+        // 如果当前 Dep.target 存在的话, 将当前 computed 的所有依赖Dep添加到 Dep.target 中, 当 Dep.target 更新时,就会触发 computed, 从而实现 computed 的被动更新
         if (Dep.target) {
-          // console.warn("🚀 ------------------------------------------------------------------------🚀")
-          // console.warn("🚀 ~ file: state.js ~ line 309 ~ computedGetter ~ Dep.target", Dep.target)
-          // console.warn("🚀 ------------------------------------------------------------------------🚀")
-          // console.log(Dep.target);
-          // console.log(watcher.deps, 'watcher.deps');
-          // debugger
-          //
           watcher.depend();
         }
         // console.warn("🚀 ------------------------------------------------------------------------------🚀")
@@ -5441,6 +5479,7 @@
     var propsDef = {};
     propsDef.get = function () { return this._props };
     {
+      // 设置 vm.$data 会得到警告
       dataDef.set = function () {
         warn(
           'Avoid replacing instance root $data. ' +
@@ -5448,6 +5487,7 @@
           this
         );
       };
+      // 设置 vm.$props 会得到警告
       propsDef.set = function () {
         warn("$props is readonly.", this);
       };
@@ -5464,7 +5504,7 @@
       options
     ) {
       var vm = this;
-      // 应为可以指定为字符串, 所有很有可能是vm实例上的一个对象,所以要对其进行重新调用createWatcher判断处理,
+      // 因为可以指定为字符串, 所有很有可能是vm实例上的一个对象,所以要对其进行重新调用createWatcher判断处理,
       if (isPlainObject(cb)) {
         return createWatcher(vm, expOrFn, cb, options);
       }
@@ -5474,6 +5514,7 @@
       // 会对该字符串解析，调用 parsePath，解析成一个循环读取 vm 实例属性的方法，
       // 在下一步 get 调用时，将 Dep.target 指向该 watcher，然后执行该方法，触发 vm实例上属性的 get
       // 从而实现依赖收集
+      console.log(options, '====');
       var watcher = new Watcher(vm, expOrFn, cb, options);
       // 如果不是立即执行回调函数, 就会等到所监听的值发生改变时,再触发
       // 如果时立即执行watcher
@@ -5577,6 +5618,7 @@
     };
   }
 
+  // 初始化内部函数
   function initInternalComponent (vm, options) {
     // 把组件的一些属性动态属性,保存在vm.$options中,访问速度可以更快
     // 代码小技巧: 用opts保存vm.$options的引用,通过opts来修改,避免直接用vm.$options 来修改可以简化代码,看着更简洁
@@ -5638,6 +5680,7 @@
   }
 
   function Vue (options) {
+    // 不是生产环境 并且 不是通过 new 关键字来调用,就抛出异常
     if (!(this instanceof Vue)
     ) {
       warn('Vue is a constructor and should be called with the `new` keyword');

@@ -27,6 +27,8 @@
   }
 
   /**
+   * 检查一个值是否是原始值
+   * string | number | boolean | symbol
    * Check if value is primitive.
    */
   function isPrimitive (value) {

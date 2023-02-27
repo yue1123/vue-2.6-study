@@ -1,85 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-    <style>
-      [v-clock] {
-        display: none;
+<head>
+  <meta charset="UTF-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Document</title>
+  <style>
+    [v-clock] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- <div>{{name}}</div> -->
+  <!--      {{ arr }}-->
+        {{ a.b.c }}
+  <!--  <com></com>-->
+  <button @click="handleUpdateName">更新</button>
+</div>
+<!--    <div id="app1">-->
+<!--      {{ _data }}-->
+<!--    </div>-->
+<script src="./dist/vue.js"></script>
+<script>
+  // const a = new Vue({
+  //   name:'com',
+  //   template:'<div>woshizujian</div>'
+  // })
+  // Vue.component(a)
+  const vm = new Vue({
+    el: '#app',
+    props: {
+      // na11me: {
+      //   type: Boolean,
+      //   default: false,
+      // },
+      // nihao: {
+      //   type: Object,
+      //   default: () => ({ info: 100 }),
+      // },
+    },
+    data () {
+      // debugger
+      return {
+        // name: 14,
+        // info: {
+        //   address: "四川",
+        //   phone: "135....",
+        // },
+        // arr: [1, 2, [1,2,3], 3, 4, 5],
+        // user:{
+        //   age:{
+        //     value: 1
+        //   }
+        // },
+        a: { b: { c: { d: { e: 1 } } } },
       }
-    </style>
-  </head>
-  <body>
-    <div id="app">
-      <!-- <div>{{name}}</div> -->
-      {{ nickName }}
-      <!--  <com></com>-->
-      <button @click="handleUpdateName">更新</button>
-    </div>
+    },
+    // computed: {
+    //   nickName() {
+    //     console.log(this.name);
+    //     return this.name;
+    //   },
+    // },
+    methods: {
+      handleUpdateName () {
+        // let age = this.user.age
+        this.a.b.c.d.e = Math.random()
+        // this.user.age.value = 10
+        // this.arr[2].splice(1,1,10)
+        // this.$forceUpdate()
+        // this.$set(this.arr,4,  10)
+        // console.log(this.arr)
+        // this.$set(this._props,'name',Math.random())
+      },
+      watchHandler () {
+        console.log('我是watch handler')
+      },
+    },
+    // inject: { a: 1, b: 2 }
+    watch: {
+      // 'a.b.c': {
+      //   handler () {
+      //
+      //     console.log('更新')
+      //
+      //   },
+      //
+      //   deep: true,
+      // },
+      // name: 'watchHandler',
+      'a.b.c': {
+        handler () {
+          console.log('更新')
+        },
+        deep: true,
+      },
+    },
+    // methods: {
+    //   add() {
+    //     this.arr.splice(1, 0, "1000");
+    //   },
+    // },
+    // beforeCreate() {
+    //   console.log("beforeCreate");
+    // },
+    // created() {
+    //   // console.log(123333);
+    // }
+  })
+  console.log(vm)
 
-    <script src="./dist/vue.js"></script>
-    <script>
-      // const a = new Vue({
-      //   name:'com',
-      //   template:'<div>woshizujian</div>'
-      // })
-      // Vue.component(a)
-      const vm = new Vue({
-        el: "#app",
-        props: {
-          na11me: {
-            type: Boolean,
-            default: false,
-          },
-          nihao: {
-            type: Object,
-            default: () => ({ info: 100 }),
-          },
-        },
-        data() {
-          // debugger
-          return {
-            name: 14,
-            info: {
-              address: "四川",
-              phone: "135....",
-            },
-            arr: [1, 2, 3, 4, 5],
-          };
-        },
-        computed: {
-          nickName() {
-            console.log(this.name);
-            return this.name;
-          },
-        },
-        methods: {
-          handleUpdateName() {
-            this.name = Math.random();
-          },
-          watchHandler(){
-            console.log('我是watch handler');
-          }
-        },
-        // inject: { a: 1, b: 2 },
-        watch: {
-          name: 'watchHandler'
-        },
-        // methods: {
-        //   add() {
-        //     this.arr.splice(1, 0, "1000");
-        //   },
-        // },
-        // beforeCreate() {
-        //   console.log("beforeCreate");
-        // },
-        // created() {
-        //   // console.log(123333);
-        // }
-      });
-      console.log(vm);
-    </script>
-  </body>
+  // const vm2 = new Vue({
+  //   el: '#app1',
+  //   data: vm.$data.arr
+  // })
+</script>
+</body>
 </html>

@@ -172,6 +172,7 @@ function initData (vm: Component) {
 
 export function getData (data: Function, vm: Component): any {
   // #7573 disable dep collection when invoking data getters
+  // pushTarget undefined 来禁止 deep collection
   pushTarget()
   try {
     return data.call(vm, vm)
@@ -185,6 +186,7 @@ export function getData (data: Function, vm: Component): any {
 
 const computedWatcherOptions = { lazy: true }
 
+// 初始化 computed 入口函数
 function initComputed (vm: Component, computed: Object) {
   // $flow-disable-line
   // 创建一个用于保存所有computed watchers的map
@@ -231,7 +233,9 @@ function initComputed (vm: Component, computed: Object) {
         vm,
         // getter 无效,watcher 求值函数就使用一个空函数
         getter || noop,
+        // callback
         noop,
+        // { lazy: true }
         // lazy watcher
         computedWatcherOptions
       )
@@ -242,7 +246,7 @@ function initComputed (vm: Component, computed: Object) {
     // at instantiation here.
     // 判断key是否在当前实例上,没有才定义
     if (!(key in vm)) {
-      defineComputed(vm, key, userDef)
+      defineComputed(/* target */vm, /* computed prototype key */key, /* computed function */userDef)
     } else if (process.env.NODE_ENV !== 'production') {
       // 在当前实例上的话, 他就很可能来自data,props,methods中,所以分别判断,给出警告
       if (key in vm.$data) {
@@ -268,7 +272,7 @@ export function defineComputed (
     sharedPropertyDefinition.get = shouldCache
     // 缓存的话就走watcher
       ? createComputedGetter(key)
-      // 不缓存的话就直接调用.每次视图渲染,触发重新调用函数,无异于methods
+      // 不缓存的话就直接调用.每次取值触发 get 就调用函数,无异于methods
       : createGetterInvoker(userDef)
     sharedPropertyDefinition.set = noop
   } else {
@@ -312,22 +316,24 @@ function createComputedGetter (key) {
       // 只有当视图访问computed 属性时, 才会触发computedGetter函数, 从而触发computed watcher的evaluate求值函数, 该函数调用watcher.get,
       // 通过pushTarget, 将全局的Dep.target 指向该watcher, 于是,求值过程中,访问到的属性,都会触发get,然后将属性添加到该watcher的deps中,实现依赖收集
 
+      // 大概步骤:
+      // init
+      // ==> watcher(未求值的 watcher,dirty)
+      // ===> 视图渲染用到 computed 的
+      // ===> 如果该 watcher 是dirty的,就会求值,全局的Dep.target 指向该 watcher
+      // ===> computed function 执行,触发get
+      // ===> 依赖收集完毕
+
       // 问题二: computed 属性的依赖变化,是如何触发视图重新渲染的 ???
       // computed watcher在计算求值后,就收集了所有该watcher关联的依赖, 同时全局的Dep.target指向renderWatcher,
-      // 这时候调用computedWatcher.depend 方法,将computedWatcher的所有依赖添加到renderWatcher 依赖中, 于是, computedWatcher的依赖变化时(dirty属性也会变成true),
+      // 这时候调用computedWatcher.depend 方法,将computedWatcher的所有依赖添加到 renderWatcher 依赖中, 于是, computedWatcher的依赖变化时(dirty属性也会变成true),
       // 就会通知视图从新渲染, 视图渲染又会触发computedGetter, 从而触发computedWatcher.evaluate重新求值, 然后渲染到视图中
+
       if (watcher.dirty) {
         watcher.evaluate();
       }
-      // 如果当前Dep.target 存在的话, 将
+      // 如果当前 Dep.target 存在的话, 将当前 computed 的所有依赖Dep添加到 Dep.target 中, 当 Dep.target 更新时,就会触发 computed, 从而实现 computed 的被动更新
       if (Dep.target) {
-        // console.warn("🚀 ------------------------------------------------------------------------🚀")
-        // console.warn("🚀 ~ file: state.js ~ line 309 ~ computedGetter ~ Dep.target", Dep.target)
-        // console.warn("🚀 ------------------------------------------------------------------------🚀")
-        // console.log(Dep.target);
-        // console.log(watcher.deps, 'watcher.deps');
-        // debugger
-        //
         watcher.depend();
       }
       // console.warn("🚀 ------------------------------------------------------------------------------🚀")
@@ -448,6 +454,7 @@ export function stateMixin (Vue: Class<Component>) {
   const propsDef = {}
   propsDef.get = function () { return this._props }
   if (process.env.NODE_ENV !== 'production') {
+    // 设置 vm.$data 会得到警告
     dataDef.set = function () {
       warn(
         'Avoid replacing instance root $data. ' +
@@ -455,6 +462,7 @@ export function stateMixin (Vue: Class<Component>) {
         this
       )
     }
+    // 设置 vm.$props 会得到警告
     propsDef.set = function () {
       warn(`$props is readonly.`, this)
     }
@@ -471,7 +479,7 @@ export function stateMixin (Vue: Class<Component>) {
     options?: Object
   ): Function {
     const vm: Component = this;
-    // 应为可以指定为字符串, 所有很有可能是vm实例上的一个对象,所以要对其进行重新调用createWatcher判断处理,
+    // 因为可以指定为字符串, 所有很有可能是vm实例上的一个对象,所以要对其进行重新调用createWatcher判断处理,
     if (isPlainObject(cb)) {
       return createWatcher(vm, expOrFn, cb, options);
     }
@@ -481,6 +489,7 @@ export function stateMixin (Vue: Class<Component>) {
     // 会对该字符串解析，调用 parsePath，解析成一个循环读取 vm 实例属性的方法，
     // 在下一步 get 调用时，将 Dep.target 指向该 watcher，然后执行该方法，触发 vm实例上属性的 get
     // 从而实现依赖收集
+    console.log(options, '====')
     const watcher = new Watcher(vm, expOrFn, cb, options);
     // 如果不是立即执行回调函数, 就会等到所监听的值发生改变时,再触发
     // 如果时立即执行watcher

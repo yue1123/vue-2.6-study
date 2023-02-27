@@ -6,6 +6,7 @@ import { lifecycleMixin } from './lifecycle'
 import { warn } from '../util/index'
 
 function Vue (options) {
+  // 不是生产环境 并且 不是通过 new 关键字来调用,就抛出异常
   if (process.env.NODE_ENV !== 'production' &&
     !(this instanceof Vue)
   ) {

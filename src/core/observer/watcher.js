@@ -24,8 +24,10 @@ let uid = 0;
  * and fires callback when the expression value changes.
  * This is used for both the $watch() api and directives.
  */
-// FIXME: watcher 优先级??
-// 1. 几种 watcher 的优先级 ?
+// 几种 watcher 初始化的优先级 ?
+// 1. user watcher
+// 2. computed watcher
+// 3. render watcher
 // 相当于观察者
 export default class Watcher {
   // 实例
@@ -97,6 +99,7 @@ export default class Watcher {
       this.getter = expOrFn;
     } else {
       this.getter = parsePath(expOrFn);
+      console.log(this.getter)
       if (!this.getter) {
         this.getter = noop;
         process.env.NODE_ENV !== "production" &&
@@ -109,7 +112,7 @@ export default class Watcher {
       }
     }
     this.value = this.lazy ? undefined : this.get();
-    console.log(this.value, this.getter, '==================')
+    // console.log(this.value, this.getter, '==================')
   }
 
   /**
@@ -145,6 +148,7 @@ export default class Watcher {
    */
   // 向dep中添加watcher
   addDep(dep: Dep) {
+    console.log(dep)
     const id = dep.id;
     console.warn(
       "🚀 --------------------------------------------------------------------------------🚀"
@@ -260,7 +264,7 @@ export default class Watcher {
   depend() {
     let i = this.deps.length;
     while (i--) {
-      console.log(this.deps[i]);
+      // console.log(this.deps[i]);
       this.deps[i].depend();
     }
   }

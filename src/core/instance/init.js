@@ -95,6 +95,7 @@ export function initMixin (Vue: Class<Component>) {
   }
 }
 
+// 初始化内部函数
 export function initInternalComponent (vm: Component, options: InternalComponentOptions) {
   // 把组件的一些属性动态属性,保存在vm.$options中,访问速度可以更快
   // 代码小技巧: 用opts保存vm.$options的引用,通过opts来修改,避免直接用vm.$options 来修改可以简化代码,看着更简洁

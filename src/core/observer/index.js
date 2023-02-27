@@ -37,14 +37,18 @@ export function toggleObserving(value: boolean) {
 export class Observer {
   value: any;
   dep: Dep;
+  //
   vmCount: number; // number of vms that have this object as root $data
 
   constructor(value: any) {
+    // 记录当前值
     this.value = value;
     this.dep = new Dep();
     this.vmCount = 0;
     def(value, "__ob__", this);
     // 如果value值是一个数组
+    // TIPS:
+    // Vue 中只会对数组中非原始数组代理,原始值不做处理
     if (Array.isArray(value)) {
       // 如果 __proto__ 可用,直接将拦截的 Array 方法赋给__proto__
       if (hasProto) {
@@ -127,6 +131,7 @@ function copyAugment(target: Object, src: Object, keys: Array<string>) {
  */
 export function observe(value: any, asRootData: ?boolean): Observer | void {
   // 如果value 不是一个对象或者value是VNode,直接返回
+  // 只代理对象
   if (!isObject(value) || value instanceof VNode) {
     return;
   }
@@ -142,6 +147,7 @@ export function observe(value: any, asRootData: ?boolean): Observer | void {
     // 如果是数组或者对象
     (Array.isArray(value) || isPlainObject(value)) &&
     // 检查对象是否可以被添加新的属性
+    // 例如 通过 Object.freeze() 冻结的对象就不会转换为响应式
     Object.isExtensible(value) &&
     // 不是vm(this)对象
     !value._isVue
@@ -191,7 +197,7 @@ export function defineReactive(
   const getter = property && property.get;
   // 属性已有的 set
   const setter = property && property.set;
-  // FIXME: ??? 这句话不是很理解
+  // 如果没有 getter 只有 setter, 且只传入了 obj和key, 没有提供 val,就从 obj 中取key的值
   if ((!getter || setter) && arguments.length === 2) {
     val = obj[key];
   }
@@ -204,15 +210,20 @@ export function defineReactive(
     configurable: true,
     get: function reactiveGetter() {
       const value = getter ? getter.call(obj) : val;
-      // FIXME: ??? 这句话不是很理解
+      // console.log(value,key,childOb)
       // Dep.target 是一个当前处在全局的活跃的 Watcher
       // get 触发依赖收集
       // eslint-disable-next-line no-debugger
       // debugger
+      console.log('key',key,'===============')
       if (Dep.target) {
+        console.log(Dep.target, dep,'收集的 dep')
         dep.depend();
+        // 如果 value 是对象/数组, 也需要把 value 对应的 ob 添加为当前 Dep.target 的依赖, 当用户调用$set时,直接取到 childOb 的 dep, 调用 dep.notify 进行视图更新
+        // 因为子属性任意一个更改,都应该更新视图
         if (childOb) {
           childOb.dep.depend();
+          // 如果是数组,还需要将数组里面非原始值递归的添加依赖
           if (Array.isArray(value)) {
             dependArray(value);
           }
@@ -223,6 +234,8 @@ export function defineReactive(
     set: function reactiveSetter(newVal) {
       const value = getter ? getter.call(obj) : val;
       /* eslint-disable no-self-compare */
+      // 如果两个值相等, 或者值为 NAN, 直接返回
+      // NaN === NaN  ===> false
       if (newVal === value || (newVal !== newVal && value !== value)) {
         return;
       }
@@ -231,13 +244,16 @@ export function defineReactive(
         customSetter();
       }
       // #7981: for accessor properties without setter
+      // 如果没有setter,只有 getter, 直接返回
       if (getter && !setter) return;
       if (setter) {
         setter.call(obj, newVal);
       } else {
         val = newVal;
       }
+      // 如果设置的值是对象或者数组,还需要更新响应式数据,更新 childOb
       childOb = !shallow && observe(newVal);
+      // 触发更新
       dep.notify();
     },
   });
@@ -257,16 +273,22 @@ export function set(target: Array<any> | Object, key: any, val: any): any {
       `Cannot set reactive property on undefined, null, or primitive value: ${(target: any)}`
     );
   }
+  // 如果是一个数组,并且传入的 key 有效,设置后会触发数组重谢方法,进行更新
   if (Array.isArray(target) && isValidArrayIndex(key)) {
+    // 直接给一个数组设置长度, 如果大于数组当前长度,会扩充数组,并填充 empty item,如果小于数组当前长度,会从给定的长度处进行截取
     target.length = Math.max(target.length, key);
+    // 再给指定的 index 插入元素
+    // splice 是被重写了的 splice 方法,会触发更新
     target.splice(key, 1, val);
     return val;
   }
+  // 如果 key 已经存在在 target 中,则直接  set会触发属性的响应式 set 方法
   if (key in target && !(key in Object.prototype)) {
     target[key] = val;
     return val;
   }
   const ob = (target: any).__ob__;
+  // 如果 target 是当前实例(this) 或者 通过 this.$data 和 this._data 添加属性,是不允许的行为
   if (target._isVue || (ob && ob.vmCount)) {
     process.env.NODE_ENV !== "production" &&
       warn(
@@ -275,16 +297,20 @@ export function set(target: Array<any> | Object, key: any, val: any): any {
       );
     return val;
   }
+  // 如果没有 ob, 说明不是一个响应式属性,直接修改,无需更新
   if (!ob) {
     target[key] = val;
     return val;
   }
+  // 如果有 ob,说明是响应式属性,通过defineReactive,想已有的 data中添加一个属性
   defineReactive(ob.value, key, val);
+  // 更新
   ob.dep.notify();
   return val;
 }
 
 /**
+ * 删除一个属性并触发更新
  * Delete a property and trigger change if necessary.
  */
 export function del(target: Array<any> | Object, key: any) {
@@ -320,10 +346,12 @@ export function del(target: Array<any> | Object, key: any) {
 }
 
 /**
+ *
  * Collect dependencies on array elements when the array is touched, since
  * we cannot intercept array element access like property getters.
  */
 function dependArray(value: Array<any>) {
+  console.log('dependArray',value)
   for (let e, i = 0, l = value.length; i < l; i++) {
     e = value[i];
     e && e.__ob__ && e.__ob__.dep.depend();
